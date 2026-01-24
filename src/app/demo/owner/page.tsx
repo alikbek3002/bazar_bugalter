@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import * as XLSX from 'xlsx';
 import {
     Building2, Users, FileText, CreditCard, BarChart3, Bell,
     Settings, LogOut, Menu, X, Home, PlusCircle, ChevronRight
@@ -49,6 +50,84 @@ export default function DemoOwnerPage() {
     const [newSpaceOpen, setNewSpaceOpen] = useState(false);
     const [newContractOpen, setNewContractOpen] = useState(false);
     const [newReportOpen, setNewReportOpen] = useState(false);
+
+    // States for report form
+    const [reportType, setReportType] = useState('');
+    const [reportStartDate, setReportStartDate] = useState('');
+    const [reportEndDate, setReportEndDate] = useState('');
+    const [reportFormat, setReportFormat] = useState('');
+
+    // Function to export report to Excel
+    const handleExportReport = () => {
+        if (!reportType || !reportFormat) {
+            alert('Пожалуйста, заполните все обязательные поля');
+            return;
+        }
+
+        if (reportFormat === 'excel') {
+            // Sample data based on report type
+            let data: any[] = [];
+            let sheetName = '';
+
+            switch (reportType) {
+                case 'payments':
+                    sheetName = 'Отчет по платежам';
+                    data = mockRecentPayments.map(p => ({
+                        'Арендатор': p.tenant,
+                        'Сумма': p.amount,
+                        'Статус': p.status === 'paid' ? 'Оплачено' : p.status === 'pending' ? 'Ожидает' : 'Просрочено',
+                        'Дата': p.date || 'Не указана'
+                    }));
+                    break;
+                case 'occupancy':
+                    sheetName = 'Отчет по занятости';
+                    data = [{
+                        'Всего мест': mockStats.totalSpaces,
+                        'Занято': mockStats.occupiedSpaces,
+                        'Свободно': mockStats.vacantSpaces,
+                        'Процент занятости': `${((mockStats.occupiedSpaces / mockStats.totalSpaces) * 100).toFixed(1)}%`
+                    }];
+                    break;
+                case 'revenue':
+                    sheetName = 'Отчет по доходам';
+                    data = [{
+                        'Период': 'Январь 2024',
+                        'Доход за месяц (₸)': mockStats.monthlyRevenue,
+                        'Ожидают оплаты': mockStats.pendingPayments,
+                        'Просрочено': mockStats.overduePayments,
+                    }];
+                    break;
+                case 'tenants':
+                    sheetName = 'Отчет по арендаторам';
+                    data = [{
+                        'Всего арендаторов': mockStats.totalTenants,
+                        'Активных договоров': mockStats.totalTenants,
+                        'Средняя аренда (₸)': Math.round(mockStats.monthlyRevenue / mockStats.totalTenants)
+                    }];
+                    break;
+            }
+
+            // Create workbook and worksheet
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(data);
+
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+            // Generate filename
+            const fileName = `${sheetName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+            // Download file
+            XLSX.writeFile(wb, fileName);
+
+            setNewReportOpen(false);
+            alert(`Отчет успешно экспортирован в Excel!\nФайл: ${fileName}`);
+        } else {
+            // For other formats, show demo message
+            alert(`Отчёт сформирован в формате ${reportFormat}! (демо)`);
+            setNewReportOpen(false);
+        }
+    };
 
 
     const navItems = [
@@ -397,7 +476,7 @@ export default function DemoOwnerPage() {
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
                             <Label htmlFor="report-type">Тип отчёта *</Label>
-                            <Select>
+                            <Select value={reportType} onValueChange={setReportType}>
                                 <SelectTrigger className="bg-slate-700 border-slate-600">
                                     <SelectValue placeholder="Выберите тип отчёта" />
                                 </SelectTrigger>
@@ -411,15 +490,27 @@ export default function DemoOwnerPage() {
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="report-start">Период с *</Label>
-                            <Input id="report-start" type="date" className="bg-slate-700 border-slate-600" />
+                            <Input
+                                id="report-start"
+                                type="date"
+                                className="bg-slate-700 border-slate-600"
+                                value={reportStartDate}
+                                onChange={(e) => setReportStartDate(e.target.value)}
+                            />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="report-end">Период по *</Label>
-                            <Input id="report-end" type="date" className="bg-slate-700 border-slate-600" />
+                            <Input
+                                id="report-end"
+                                type="date"
+                                className="bg-slate-700 border-slate-600"
+                                value={reportEndDate}
+                                onChange={(e) => setReportEndDate(e.target.value)}
+                            />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="report-format">Формат экспорта *</Label>
-                            <Select>
+                            <Select value={reportFormat} onValueChange={setReportFormat}>
                                 <SelectTrigger className="bg-slate-700 border-slate-600">
                                     <SelectValue placeholder="Выберите формат" />
                                 </SelectTrigger>
@@ -435,10 +526,7 @@ export default function DemoOwnerPage() {
                         <Button variant="outline" onClick={() => setNewReportOpen(false)} className="border-slate-600">
                             Отмена
                         </Button>
-                        <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => {
-                            alert('Отчёт сформирован! (демо)');
-                            setNewReportOpen(false);
-                        }}>
+                        <Button className="bg-purple-600 hover:bg-purple-700" onClick={handleExportReport}>
                             Сформировать
                         </Button>
                     </DialogFooter>
