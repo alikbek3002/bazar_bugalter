@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, ArrowLeft, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { CreditCard, ArrowLeft, CheckCircle, Clock, AlertTriangle, Upload, FileText } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -26,10 +26,10 @@ import {
 
 // Mock data
 const mockPayments = [
-    { id: '1', tenant: 'ИП Иванов А.А.', space: 'A-01', period: 'Январь 2024', amount: 45000, status: 'paid', date: '2024-01-20' },
+    { id: '1', tenant: 'ИП Иванов А.А.', space: 'A-01', period: 'Январь 2024', amount: 45000, status: 'paid', date: '2024-01-20', confirmed_by: 'Бухгалтер Мария', receipt: 'check_123.pdf' },
     { id: '2', tenant: 'ООО Ромашка', space: 'A-03', period: 'Январь 2024', amount: 78000, status: 'pending', date: null },
     { id: '3', tenant: 'ИП Сидоров Б.В.', space: 'B-02', period: 'Январь 2024', amount: 32000, status: 'overdue', date: null },
-    { id: '4', tenant: 'ООО ТехМаркет', space: 'C-01', period: 'Январь 2024', amount: 92000, status: 'paid', date: '2024-01-18' },
+    { id: '4', tenant: 'ООО ТехМаркет', space: 'C-01', period: 'Январь 2024', amount: 92000, status: 'paid', date: '2024-01-18', confirmed_by: 'Бухгалтер Мария', receipt: 'check_125.jpg' },
     { id: '5', tenant: 'ИП Козлова А.П.', space: 'B-05', period: 'Январь 2024', amount: 55000, status: 'pending', date: null },
 ];
 
@@ -48,6 +48,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default function DemoPaymentsPage() {
     const [confirmPaymentOpen, setConfirmPaymentOpen] = useState(false);
     const [selectedPayment, setSelectedPayment] = useState<typeof mockPayments[0] | null>(null);
+    const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
     // Format number to avoid hydration errors
     const formatAmount = (amount: number) => {
@@ -63,6 +64,7 @@ export default function DemoPaymentsPage() {
 
     const handleConfirmPayment = (payment: typeof mockPayments[0]) => {
         setSelectedPayment(payment);
+        setReceiptFile(null); // Reset file on open
         setConfirmPaymentOpen(true);
     };
 
@@ -185,7 +187,7 @@ export default function DemoPaymentsPage() {
                     <DialogHeader>
                         <DialogTitle>Подтверждение оплаты</DialogTitle>
                         <DialogDescription className="text-slate-400">
-                            Отметить платеж как оплаченный
+                            Отметить платеж как оплаченный. Обязательно прикрепите чек.
                         </DialogDescription>
                     </DialogHeader>
                     {selectedPayment && (
@@ -235,12 +237,33 @@ export default function DemoPaymentsPage() {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="payment-receipt">Номер квитанции/чека</Label>
-                                <Input
-                                    id="payment-receipt"
-                                    placeholder="№123456"
-                                    className="bg-slate-700 border-slate-600"
-                                />
+                                <Label htmlFor="payment-receipt">Чек/Квитанция об оплате *</Label>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        id="payment-receipt"
+                                        type="file"
+                                        className="bg-slate-700 border-slate-600 hidden"
+                                        onChange={(e) => {
+                                            if (e.target.files && e.target.files[0]) {
+                                                setReceiptFile(e.target.files[0]);
+                                            }
+                                        }}
+                                    />
+                                    <Button
+                                        variant="outline"
+                                        className="w-full border-dashed border-slate-500 text-slate-400 hover:text-white hover:bg-slate-700"
+                                        onClick={() => document.getElementById('payment-receipt')?.click()}
+                                    >
+                                        <Upload className="w-4 h-4 mr-2" />
+                                        {receiptFile ? receiptFile.name : 'Загрузить чек (PDF, IMG)'}
+                                    </Button>
+                                </div>
+                                {receiptFile && (
+                                    <p className="text-xs text-green-400 flex items-center mt-1">
+                                        <CheckCircle className="w-3 h-3 mr-1" />
+                                        Файл выбран
+                                    </p>
+                                )}
                             </div>
                         </div>
                     )}
@@ -249,7 +272,11 @@ export default function DemoPaymentsPage() {
                             Отмена
                         </Button>
                         <Button className="bg-green-600 hover:bg-green-700" onClick={() => {
-                            alert('Платеж подтвержден! (демо)');
+                            if (!receiptFile) {
+                                alert('Пожалуйста, загрузите чек об оплате!');
+                                return;
+                            }
+                            alert('Платеж подтвержден! Чек сохранен. (демо)');
                             setConfirmPaymentOpen(false);
                         }}>
                             <CheckCircle className="w-4 h-4 mr-2" />
