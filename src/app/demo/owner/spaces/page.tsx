@@ -74,7 +74,7 @@ const mockSpaces = [
         sector: 'B',
         space_type: 'container',
         area_sqm: 18,
-        status: 'maintenance',
+        status: 'vacant',
         business_type: null,
         tenant_id: null,
         tenant_name: null,
@@ -122,13 +122,11 @@ const SPACE_TYPES: Record<string, string> = {
 const SPACE_STATUSES: Record<string, string> = {
     occupied: 'Занято',
     vacant: 'Свободно',
-    maintenance: 'Обслуживание',
 };
 
 const STATUS_COLORS: Record<string, string> = {
     occupied: 'bg-red-500',
     vacant: 'bg-green-500',
-    maintenance: 'bg-yellow-500',
 };
 
 export default function DemoSpacesPage() {
@@ -140,7 +138,6 @@ export default function DemoSpacesPage() {
         total: mockSpaces.length,
         occupied: mockSpaces.filter(s => s.status === 'occupied').length,
         vacant: mockSpaces.filter(s => s.status === 'vacant').length,
-        maintenance: mockSpaces.filter(s => s.status === 'maintenance').length,
     };
 
     // Format number to avoid hydration errors
@@ -174,7 +171,7 @@ export default function DemoSpacesPage() {
                 </div>
 
                 {/* Stats */}
-                <div className="grid gap-4 md:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-3">
                     <Card className="bg-slate-800/50 border-slate-700">
                         <CardHeader className="pb-2">
                             <CardTitle className="text-sm font-medium text-slate-400">Всего мест</CardTitle>
@@ -199,14 +196,7 @@ export default function DemoSpacesPage() {
                             <div className="text-2xl font-bold text-green-400">{stats.vacant}</div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-slate-800/50 border-slate-700">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium text-yellow-400">Обслуживание</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-yellow-400">{stats.maintenance}</div>
-                        </CardContent>
-                    </Card>
+
                 </div>
 
                 {/* Spaces List */}
@@ -317,7 +307,6 @@ export default function DemoSpacesPage() {
                                 <SelectContent className="bg-slate-800 border-slate-700">
                                     <SelectItem value="vacant">Свободно</SelectItem>
                                     <SelectItem value="occupied">Занято</SelectItem>
-                                    <SelectItem value="maintenance">Обслуживание</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -382,7 +371,6 @@ export default function DemoSpacesPage() {
                                     <SelectContent className="bg-slate-800 border-slate-700">
                                         <SelectItem value="vacant">Свободно</SelectItem>
                                         <SelectItem value="occupied">Занято</SelectItem>
-                                        <SelectItem value="maintenance">Обслуживание</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

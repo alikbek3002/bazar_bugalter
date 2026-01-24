@@ -389,7 +389,6 @@ export default function DemoOwnerPage() {
                                 <SelectContent className="bg-slate-800 border-slate-700">
                                     <SelectItem value="vacant">Свободно</SelectItem>
                                     <SelectItem value="occupied">Занято</SelectItem>
-                                    <SelectItem value="maintenance">Обслуживание</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
