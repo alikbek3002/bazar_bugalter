@@ -170,7 +170,7 @@ export default function DemoContractsPage() {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setNewContractOpen(false)} className="border-slate-600">
+                        <Button variant="outline" onClick={() => setNewContractOpen(false)} className="border-slate-600 hover:bg-slate-700 hover:text-white bg-transparent text-white">
                             Отмена
                         </Button>
                         <Button className="bg-green-600 hover:bg-green-700" onClick={() => {

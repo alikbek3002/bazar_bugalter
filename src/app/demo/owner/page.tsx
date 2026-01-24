@@ -395,7 +395,7 @@ export default function DemoOwnerPage() {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setNewSpaceOpen(false)} className="border-slate-600">
+                        <Button variant="outline" onClick={() => setNewSpaceOpen(false)} className="border-slate-600 hover:bg-slate-700 hover:text-white bg-transparent text-white">
                             Отмена
                         </Button>
                         <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
@@ -458,7 +458,7 @@ export default function DemoOwnerPage() {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setNewContractOpen(false)} className="border-slate-600">
+                        <Button variant="outline" onClick={() => setNewContractOpen(false)} className="border-slate-600 hover:bg-slate-700 hover:text-white bg-transparent text-white">
                             Отмена
                         </Button>
                         <Button className="bg-green-600 hover:bg-green-700" onClick={() => {
@@ -530,7 +530,7 @@ export default function DemoOwnerPage() {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setNewReportOpen(false)} className="border-slate-600">
+                        <Button variant="outline" onClick={() => setNewReportOpen(false)} className="border-slate-600 hover:bg-slate-700 hover:text-white bg-transparent text-white">
                             Отмена
                         </Button>
                         <Button className="bg-purple-600 hover:bg-purple-700" onClick={handleExportReport}>
