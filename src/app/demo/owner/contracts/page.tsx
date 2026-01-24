@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, FileText, ArrowLeft, Calendar, Upload, Download } from 'lucide-react';
+import { Plus, FileText, ArrowLeft, Calendar, Upload, Download, Eye } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -117,11 +117,21 @@ export default function DemoContractsPage() {
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="text-slate-400 hover:text-white hover:bg-slate-700"
-                                            onClick={() => alert(`Скачивание файла: ${contract.file || 'contract.pdf'}`)}
+                                            className="text-blue-400 hover:text-blue-300 hover:bg-slate-700"
+                                            onClick={() => {
+                                                // В реальном приложении здесь будет URL файла
+                                                // Для демо открываем пример PDF или показываем сообщение
+                                                if (contract.file) {
+                                                    // Эмуляция открытия файла
+                                                    alert(`Открытие файла: ${contract.file}`);
+                                                    // window.open(contract.file_url, '_blank');
+                                                } else {
+                                                    alert('Файл договора не найден');
+                                                }
+                                            }}
                                         >
-                                            <Download className="w-4 h-4 mr-2" />
-                                            Скачать PDF
+                                            <Eye className="w-4 h-4 mr-2" />
+                                            Просмотреть
                                         </Button>
                                     </div>
                                 </div>

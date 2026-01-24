@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Clock, CheckCircle, Download, ArrowLeft, Plus, Phone, Building } from "lucide-react";
+import { FileText, Clock, CheckCircle, Download, ArrowLeft, Plus, Phone, Building, Eye } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -312,10 +312,16 @@ export default function DemoTenantsPage() {
                                                         variant="ghost"
                                                         size="sm"
                                                         className="h-7 text-xs text-blue-400 hover:text-white hover:bg-slate-600"
-                                                        onClick={() => alert(`Просмотр договора: ${contract.file || 'contract.pdf'}`)}
+                                                        onClick={() => {
+                                                            if (contract.file) {
+                                                                alert(`Просмотр договора: ${contract.file}`);
+                                                            } else {
+                                                                alert('Договор не загружен');
+                                                            }
+                                                        }}
                                                     >
-                                                        <Download className="w-3 h-3 mr-1" />
-                                                        Скачать PDF
+                                                        <Eye className="w-3 h-3 mr-1" />
+                                                        Просмотреть
                                                     </Button>
                                                 </div>
                                             </div>
