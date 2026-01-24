@@ -26,12 +26,90 @@ import {
 
 // Mock data
 const mockSpaces = [
-    { id: '1', code: 'A-01', sector: 'A', space_type: 'pavilion', area_sqm: 24, status: 'occupied', business_type: 'Одежда' },
-    { id: '2', code: 'A-02', sector: 'A', space_type: 'kiosk', area_sqm: 12, status: 'vacant', business_type: null },
-    { id: '3', code: 'A-03', sector: 'A', space_type: 'pavilion', area_sqm: 30, status: 'occupied', business_type: 'Электроника' },
-    { id: '4', code: 'B-01', sector: 'B', space_type: 'container', area_sqm: 18, status: 'maintenance', business_type: null },
-    { id: '5', code: 'B-02', sector: 'B', space_type: 'open_space', area_sqm: 8, status: 'occupied', business_type: 'Продукты' },
-    { id: '6', code: 'C-01', sector: 'C', space_type: 'pavilion', area_sqm: 36, status: 'vacant', business_type: null },
+    {
+        id: '1',
+        code: 'A-01',
+        sector: 'A',
+        space_type: 'pavilion',
+        area_sqm: 24,
+        status: 'occupied',
+        business_type: 'Одежда',
+        tenant_id: '1',
+        tenant_name: 'ИП Иванов А.А.',
+        monthly_rent: 45000,
+        contract_start: '2024-01-01',
+        contract_end: '2024-12-31'
+    },
+    {
+        id: '2',
+        code: 'A-02',
+        sector: 'A',
+        space_type: 'kiosk',
+        area_sqm: 12,
+        status: 'vacant',
+        business_type: null,
+        tenant_id: null,
+        tenant_name: null,
+        monthly_rent: null,
+        contract_start: null,
+        contract_end: null
+    },
+    {
+        id: '3',
+        code: 'A-03',
+        sector: 'A',
+        space_type: 'pavilion',
+        area_sqm: 30,
+        status: 'occupied',
+        business_type: 'Электроника',
+        tenant_id: '2',
+        tenant_name: 'ООО Ромашка',
+        monthly_rent: 78000,
+        contract_start: '2023-06-01',
+        contract_end: '2024-05-31'
+    },
+    {
+        id: '4',
+        code: 'B-01',
+        sector: 'B',
+        space_type: 'container',
+        area_sqm: 18,
+        status: 'maintenance',
+        business_type: null,
+        tenant_id: null,
+        tenant_name: null,
+        monthly_rent: null,
+        contract_start: null,
+        contract_end: null
+    },
+    {
+        id: '5',
+        code: 'B-02',
+        sector: 'B',
+        space_type: 'open_space',
+        area_sqm: 8,
+        status: 'occupied',
+        business_type: 'Продукты',
+        tenant_id: '3',
+        tenant_name: 'ИП Сидоров Б.В.',
+        monthly_rent: 32000,
+        contract_start: '2024-01-01',
+        contract_end: '2024-12-31'
+    },
+    {
+        id: '6',
+        code: 'C-01',
+        sector: 'C',
+        space_type: 'pavilion',
+        area_sqm: 36,
+        status: 'vacant',
+        business_type: null,
+        tenant_id: null,
+        tenant_name: null,
+        monthly_rent: null,
+        contract_start: null,
+        contract_end: null
+    },
 ];
 
 const SPACE_TYPES: Record<string, string> = {
@@ -63,6 +141,11 @@ export default function DemoSpacesPage() {
         occupied: mockSpaces.filter(s => s.status === 'occupied').length,
         vacant: mockSpaces.filter(s => s.status === 'vacant').length,
         maintenance: mockSpaces.filter(s => s.status === 'maintenance').length,
+    };
+
+    // Format number to avoid hydration errors
+    const formatAmount = (amount: number) => {
+        return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
     };
 
     const handleViewSpace = (space: typeof mockSpaces[0]) => {
@@ -137,19 +220,20 @@ export default function DemoSpacesPage() {
                     <CardContent>
                         <div className="space-y-2">
                             {/* Table Header */}
-                            <div className="grid grid-cols-6 gap-4 px-4 py-2 bg-slate-700/50 rounded-lg font-medium text-sm text-slate-300">
+                            <div className="grid grid-cols-7 gap-4 px-4 py-2 bg-slate-700/50 rounded-lg font-medium text-sm text-slate-300">
                                 <div>Код</div>
                                 <div>Сектор</div>
                                 <div>Тип</div>
                                 <div>Площадь</div>
                                 <div>Статус</div>
+                                <div>Арендатор</div>
                                 <div>Действия</div>
                             </div>
                             {/* Table Body */}
                             {mockSpaces.map((space) => (
                                 <div
                                     key={space.id}
-                                    className="grid grid-cols-6 gap-4 px-4 py-3 border border-slate-700 rounded-lg hover:bg-slate-700/30 transition-colors"
+                                    className="grid grid-cols-7 gap-4 px-4 py-3 border border-slate-700 rounded-lg hover:bg-slate-700/30 transition-colors"
                                 >
                                     <div className="font-medium text-white">{space.code}</div>
                                     <div className="text-slate-400">{space.sector}</div>
@@ -159,6 +243,17 @@ export default function DemoSpacesPage() {
                                         <Badge className={STATUS_COLORS[space.status]}>
                                             {SPACE_STATUSES[space.status]}
                                         </Badge>
+                                    </div>
+                                    <div>
+                                        {space.status === 'occupied' && space.tenant_name ? (
+                                            <div className="text-sm">
+                                                <div className="text-white font-medium">{space.tenant_name}</div>
+                                                <div className="text-emerald-400 text-xs">{formatAmount(space.monthly_rent!)} ₸/мес</div>
+                                                <div className="text-slate-400 text-xs">До: {space.contract_end}</div>
+                                            </div>
+                                        ) : (
+                                            <span className="text-slate-500 text-sm">—</span>
+                                        )}
                                     </div>
                                     <div>
                                         <Button
