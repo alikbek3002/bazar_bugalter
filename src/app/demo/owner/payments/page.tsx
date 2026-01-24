@@ -212,13 +212,34 @@ export default function DemoPaymentsPage() {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="payment-date">Дата оплаты *</Label>
+                                <Label htmlFor="payment-date">Дата фактической оплаты *</Label>
                                 <Input
                                     id="payment-date"
                                     type="date"
                                     defaultValue={new Date().toISOString().split('T')[0]}
                                     className="bg-slate-700 border-slate-600"
                                 />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="period-start">Оплата за период с *</Label>
+                                    <Input
+                                        id="period-start"
+                                        type="date"
+                                        defaultValue={new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]}
+                                        className="bg-slate-700 border-slate-600"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="period-end">по *</Label>
+                                    <Input
+                                        id="period-end"
+                                        type="date"
+                                        defaultValue={new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0]}
+                                        className="bg-slate-700 border-slate-600"
+                                    />
+                                </div>
                             </div>
 
                             <div className="grid gap-2">
