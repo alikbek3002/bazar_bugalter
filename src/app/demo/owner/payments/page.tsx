@@ -49,6 +49,11 @@ export default function DemoPaymentsPage() {
     const [confirmPaymentOpen, setConfirmPaymentOpen] = useState(false);
     const [selectedPayment, setSelectedPayment] = useState<typeof mockPayments[0] | null>(null);
 
+    // Format number to avoid hydration errors
+    const formatAmount = (amount: number) => {
+        return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    };
+
     const stats = {
         paid: mockPayments.filter(p => p.status === 'paid').length,
         pending: mockPayments.filter(p => p.status === 'pending').length,
@@ -117,7 +122,7 @@ export default function DemoPaymentsPage() {
                             <CardTitle className="text-sm font-medium text-slate-400">Всего за месяц</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-white">{stats.total.toLocaleString()} ₸</div>
+                            <div className="text-2xl font-bold text-white">{formatAmount(stats.total)} ₸</div>
                         </CardContent>
                     </Card>
                 </div>
@@ -149,7 +154,7 @@ export default function DemoPaymentsPage() {
                                     <div className="font-medium text-white">{payment.tenant}</div>
                                     <div className="text-slate-400">{payment.space}</div>
                                     <div className="text-slate-400">{payment.period}</div>
-                                    <div className="text-white font-medium">{payment.amount.toLocaleString()} ₸</div>
+                                    <div className="text-white font-medium">{formatAmount(payment.amount)} ₸</div>
                                     <div>
                                         <Badge className={STATUS_COLORS[payment.status]}>
                                             {STATUS_LABELS[payment.status]}
@@ -200,7 +205,7 @@ export default function DemoPaymentsPage() {
                                 </div>
                                 <div className="flex justify-between border-t border-slate-600 pt-2">
                                     <span className="text-slate-400">Сумма:</span>
-                                    <span className="text-white font-bold">{selectedPayment.amount.toLocaleString()} ₸</span>
+                                    <span className="text-white font-bold">{formatAmount(selectedPayment.amount)} ₸</span>
                                 </div>
                             </div>
 

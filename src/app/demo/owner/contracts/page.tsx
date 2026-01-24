@@ -27,6 +27,11 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function DemoContractsPage() {
+    // Format number to avoid hydration errors
+    const formatAmount = (amount: number) => {
+        return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    };
+
     return (
         <div className="min-h-screen bg-slate-900 p-6">
             <div className="max-w-7xl mx-auto space-y-6">
@@ -77,7 +82,7 @@ export default function DemoContractsPage() {
                                         <Calendar className="w-4 h-4" />
                                         {contract.start_date} — {contract.end_date}
                                     </div>
-                                    <div className="text-white font-medium">{contract.monthly_rent.toLocaleString()} ₸</div>
+                                    <div className="text-white font-medium">{formatAmount(contract.monthly_rent)} ₸</div>
                                     <div>
                                         <Badge className={STATUS_COLORS[contract.status]}>
                                             {STATUS_LABELS[contract.status]}

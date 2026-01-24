@@ -129,6 +129,11 @@ export default function DemoOwnerPage() {
         }
     };
 
+    // Format number to avoid hydration errors
+    const formatAmount = (amount: number) => {
+        return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    };
+
 
     const navItems = [
         { icon: Home, label: 'Обзор', href: '/demo/owner', active: true },
@@ -319,7 +324,7 @@ export default function DemoOwnerPage() {
                                             <p className="text-sm text-slate-400">{payment.date}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-semibold text-white">{payment.amount.toLocaleString()} ₸</p>
+                                            <p className="font-semibold text-white">{formatAmount(payment.amount)} ₸</p>
                                             <span className={`text-xs px-2 py-1 rounded-full ${payment.status === 'paid'
                                                 ? 'bg-green-500/20 text-green-400'
                                                 : payment.status === 'pending'
