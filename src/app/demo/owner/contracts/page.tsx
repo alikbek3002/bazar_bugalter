@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, FileText, ArrowLeft, Calendar } from 'lucide-react';
+import { Plus, FileText, ArrowLeft, Calendar, Upload, Download } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -26,15 +26,16 @@ import {
 
 // Mock data
 const mockContracts = [
-    { id: '1', tenant: 'ИП Иванов А.А.', space: 'A-01', start_date: '2024-01-01', end_date: '2024-12-31', monthly_rent: 45000, status: 'active' },
-    { id: '2', tenant: 'ООО Ромашка', space: 'A-03', start_date: '2023-06-01', end_date: '2024-05-31', monthly_rent: 78000, status: 'active' },
-    { id: '3', tenant: 'ИП Сидоров Б.В.', space: 'B-02', start_date: '2023-01-01', end_date: '2023-12-31', monthly_rent: 32000, status: 'expired' },
-    { id: '4', tenant: 'ООО ТехМаркет', space: 'C-01', start_date: '2024-02-01', end_date: '2025-01-31', monthly_rent: 92000, status: 'active' },
+    { id: '1', tenant: 'ИП Иванов А.А.', space: 'A-01', start_date: '2024-01-01', end_date: '2024-12-31', monthly_rent: 45000, status: 'active', file: 'contract_1.pdf' },
+    { id: '2', tenant: 'ООО Ромашка', space: 'A-03', start_date: '2023-06-01', end_date: '2024-05-31', monthly_rent: 78000, status: 'active', file: 'contract_2.pdf' },
+    { id: '3', tenant: 'ИП Сидоров Б.В.', space: 'B-02', start_date: '2024-01-01', end_date: '2024-12-31', monthly_rent: 32000, status: 'expiring', file: null },
+    { id: '4', tenant: 'ООО ТехМаркет', space: 'C-01', start_date: '2024-02-01', end_date: '2025-01-31', monthly_rent: 92000, status: 'active', file: 'contract_4.pdf' },
 ];
 
 const STATUS_LABELS: Record<string, string> = {
     active: 'Активен',
     expired: 'Истёк',
+    expiring: 'Истекает', // Added for the new status
     terminated: 'Расторгнут',
 };
 
@@ -46,6 +47,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function DemoContractsPage() {
     const [newContractOpen, setNewContractOpen] = useState(false);
+    const [contractFile, setContractFile] = useState<File | null>(null);
 
     // Format number to avoid hydration errors
     const formatAmount = (amount: number) => {
@@ -66,7 +68,10 @@ export default function DemoContractsPage() {
                         <h1 className="text-3xl font-bold text-white">Договоры</h1>
                         <p className="text-slate-400">Управление договорами аренды</p>
                     </div>
-                    <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setNewContractOpen(true)}>
+                    <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
+                        setContractFile(null); // Сброс файла
+                        setNewContractOpen(true);
+                    }}>
                         <Plus className="mr-2 h-4 w-4" />
                         Новый договор
                     </Button>
@@ -109,8 +114,14 @@ export default function DemoContractsPage() {
                                         </Badge>
                                     </div>
                                     <div>
-                                        <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-                                            Открыть
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-slate-400 hover:text-white hover:bg-slate-700"
+                                            onClick={() => alert(`Скачивание файла: ${contract.file || 'contract.pdf'}`)}
+                                        >
+                                            <Download className="w-4 h-4 mr-2" />
+                                            Скачать PDF
                                         </Button>
                                     </div>
                                 </div>
@@ -168,13 +179,46 @@ export default function DemoContractsPage() {
                             <Label htmlFor="contract-amount">Сумма аренды (₸/месяц) *</Label>
                             <Input id="contract-amount" type="number" placeholder="45000" className="bg-slate-700 border-slate-600" />
                         </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="contract-file">Файл договора (PDF) *</Label>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    id="contract-file"
+                                    type="file"
+                                    accept="application/pdf"
+                                    className="bg-slate-700 border-slate-600 hidden"
+                                    onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                            const file = e.target.files[0];
+                                            if (file.type !== 'application/pdf') {
+                                                alert('Пожалуйста, выберите PDF файл!');
+                                                return;
+                                            }
+                                            setContractFile(file);
+                                        }
+                                    }}
+                                />
+                                <Button
+                                    variant="outline"
+                                    className="w-full border-dashed border-slate-500 text-slate-400 hover:text-white hover:bg-slate-700"
+                                    onClick={() => document.getElementById('contract-file')?.click()}
+                                >
+                                    <Upload className="w-4 h-4 mr-2" />
+                                    {contractFile ? contractFile.name : 'Загрузить договор (.pdf)'}
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setNewContractOpen(false)} className="border-slate-600 hover:bg-slate-700 hover:text-white bg-transparent text-white">
                             Отмена
                         </Button>
                         <Button className="bg-green-600 hover:bg-green-700" onClick={() => {
-                            alert('Договор создан! (демо)');
+                            if (!contractFile) {
+                                alert('Пожалуйста, загрузите файл договора!');
+                                return;
+                            }
+                            alert('Договор создан! Файл сохранен. (демо)');
                             setNewContractOpen(false);
                         }}>
                             Создать договор

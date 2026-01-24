@@ -27,7 +27,7 @@ const mockTenants = [
         company_name: 'ИП Иванов А.А.',
         activeContracts: 1,
         contracts: [
-            { id: '101', space: 'A-01', start: '2024-01-01', end: '2024-12-31', amount: 45000, status: 'active' }
+            { id: '101', space: 'A-01', start: '2024-01-01', end: '2024-12-31', amount: 45000, status: 'active', file: 'contract_101.pdf' }
         ],
         payments_history: [
             { id: 'p1', date: '2024-01-20', period: 'Январь 2024', amount: 45000, status: 'paid', confirmed_by: 'Бухгалтер Мария', receipt: 'check_123.pdf' },
@@ -41,8 +41,8 @@ const mockTenants = [
         company_name: 'ООО Ромашка',
         activeContracts: 2,
         contracts: [
-            { id: '102', space: 'A-03', start: '2023-06-01', end: '2024-05-31', amount: 78000, status: 'active' },
-            { id: '103', space: 'B-05', start: '2024-01-01', end: '2024-12-31', amount: 55000, status: 'active' }
+            { id: '102', space: 'A-03', start: '2023-06-01', end: '2024-05-31', amount: 78000, status: 'active', file: 'contract_102.pdf' },
+            { id: '103', space: 'B-05', start: '2024-01-01', end: '2024-12-31', amount: 55000, status: 'active', file: null }
         ],
         payments_history: [
             { id: 'p3', date: '2024-01-22', period: 'Январь 2024', amount: 78000, status: 'pending', confirmed_by: null, receipt: null },
@@ -56,7 +56,7 @@ const mockTenants = [
         company_name: 'ИП Сидоров Б.В.',
         activeContracts: 1,
         contracts: [
-            { id: '104', space: 'B-02', start: '2024-01-01', end: '2024-12-31', amount: 32000, status: 'active' }
+            { id: '104', space: 'B-02', start: '2024-01-01', end: '2024-12-31', amount: 32000, status: 'active', file: null }
         ],
         payments_history: [
             { id: 'p5', date: '2024-01-15', period: 'Январь 2024', amount: 32000, status: 'overdue', confirmed_by: null, receipt: null }
@@ -78,7 +78,7 @@ const mockTenants = [
         company_name: 'ООО ТехМаркет',
         activeContracts: 1,
         contracts: [
-            { id: '105', space: 'C-01', start: '2024-02-01', end: '2025-01-31', amount: 92000, status: 'active' }
+            { id: '105', space: 'C-01', start: '2024-02-01', end: '2025-01-31', amount: 92000, status: 'active', file: 'contract_105.pdf' }
         ],
         payments_history: []
     },
@@ -301,11 +301,22 @@ export default function DemoTenantsPage() {
                                                         {contract.start} — {contract.end}
                                                     </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <div className="font-bold text-white mb-1">{formatAmount(contract.amount)} ₸</div>
-                                                    <Badge className={contract.status === 'active' ? 'bg-green-500' : 'bg-slate-500'}>
-                                                        {contract.status === 'active' ? 'Активен' : 'Завершен'}
-                                                    </Badge>
+                                                <div className="text-right flex flex-col items-end gap-2">
+                                                    <div>
+                                                        <div className="font-bold text-white mb-1">{formatAmount(contract.amount)} ₸</div>
+                                                        <Badge className={contract.status === 'active' ? 'bg-green-500' : 'bg-slate-500'}>
+                                                            {contract.status === 'active' ? 'Активен' : 'Завершен'}
+                                                        </Badge>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-7 text-xs text-blue-400 hover:text-white hover:bg-slate-600"
+                                                        onClick={() => alert(`Просмотр договора: ${contract.file || 'contract.pdf'}`)}
+                                                    >
+                                                        <Download className="w-3 h-3 mr-1" />
+                                                        Скачать PDF
+                                                    </Button>
                                                 </div>
                                             </div>
                                         ))
