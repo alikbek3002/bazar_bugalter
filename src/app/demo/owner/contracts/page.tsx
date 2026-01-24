@@ -1,10 +1,28 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, FileText, ArrowLeft, Calendar } from 'lucide-react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 // Mock data
 const mockContracts = [
@@ -27,6 +45,8 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function DemoContractsPage() {
+    const [newContractOpen, setNewContractOpen] = useState(false);
+
     // Format number to avoid hydration errors
     const formatAmount = (amount: number) => {
         return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
@@ -46,7 +66,7 @@ export default function DemoContractsPage() {
                         <h1 className="text-3xl font-bold text-white">Договоры</h1>
                         <p className="text-slate-400">Управление договорами аренды</p>
                     </div>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
+                    <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setNewContractOpen(true)}>
                         <Plus className="mr-2 h-4 w-4" />
                         Новый договор
                     </Button>
@@ -99,6 +119,69 @@ export default function DemoContractsPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Modal: Новый договор */}
+            <Dialog open={newContractOpen} onOpenChange={setNewContractOpen}>
+                <DialogContent className="bg-slate-800 border-slate-700 text-white">
+                    <DialogHeader>
+                        <DialogTitle>Новый договор аренды</DialogTitle>
+                        <DialogDescription className="text-slate-400">
+                            Оформление договора аренды торгового места
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="contract-tenant">Арендатор *</Label>
+                            <Select>
+                                <SelectTrigger className="bg-slate-700 border-slate-600">
+                                    <SelectValue placeholder="Выберите арендатора" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-800 border-slate-700">
+                                    <SelectItem value="1">ИП Иванов А.А.</SelectItem>
+                                    <SelectItem value="2">ООО Ромашка</SelectItem>
+                                    <SelectItem value="3">ИП Петров Б.Б.</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="contract-space">Торговое место *</Label>
+                            <Select>
+                                <SelectTrigger className="bg-slate-700 border-slate-600">
+                                    <SelectValue placeholder="Выберите место" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-800 border-slate-700">
+                                    <SelectItem value="A-01">A-01 (Павильон, 24 м²)</SelectItem>
+                                    <SelectItem value="A-02">A-02 (Киоск, 12 м²)</SelectItem>
+                                    <SelectItem value="C-01">C-01 (Павильон, 36 м²)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="contract-start">Дата начала *</Label>
+                            <Input id="contract-start" type="date" className="bg-slate-700 border-slate-600" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="contract-end">Дата окончания *</Label>
+                            <Input id="contract-end" type="date" className="bg-slate-700 border-slate-600" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="contract-amount">Сумма аренды (₸/месяц) *</Label>
+                            <Input id="contract-amount" type="number" placeholder="45000" className="bg-slate-700 border-slate-600" />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setNewContractOpen(false)} className="border-slate-600">
+                            Отмена
+                        </Button>
+                        <Button className="bg-green-600 hover:bg-green-700" onClick={() => {
+                            alert('Договор создан! (демо)');
+                            setNewContractOpen(false);
+                        }}>
+                            Создать договор
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

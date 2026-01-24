@@ -278,9 +278,11 @@ export default function DemoOwnerPage() {
 
                         <Card
                             className="bg-gradient-to-br from-green-600/20 to-green-800/20 border-green-500/30 cursor-pointer hover:border-green-400/50 transition-colors"
-                            onClick={() => setNewContractOpen(true)}
                         >
-                            <CardContent className="p-6 flex items-center gap-4">
+                            <CardContent
+                                className="p-6 flex items-center gap-4"
+                                onClick={() => setNewContractOpen(true)}
+                            >
                                 <div className="w-12 h-12 rounded-lg bg-green-500/30 flex items-center justify-center">
                                     <FileText className="w-6 h-6 text-green-400" />
                                 </div>
