@@ -1,10 +1,28 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, ArrowLeft, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 // Mock data
 const mockPayments = [
@@ -28,11 +46,19 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function DemoPaymentsPage() {
+    const [confirmPaymentOpen, setConfirmPaymentOpen] = useState(false);
+    const [selectedPayment, setSelectedPayment] = useState<typeof mockPayments[0] | null>(null);
+
     const stats = {
         paid: mockPayments.filter(p => p.status === 'paid').length,
         pending: mockPayments.filter(p => p.status === 'pending').length,
         overdue: mockPayments.filter(p => p.status === 'overdue').length,
         total: mockPayments.reduce((sum, p) => sum + p.amount, 0),
+    };
+
+    const handleConfirmPayment = (payment: typeof mockPayments[0]) => {
+        setSelectedPayment(payment);
+        setConfirmPaymentOpen(true);
     };
 
     return (
@@ -131,7 +157,11 @@ export default function DemoPaymentsPage() {
                                     </div>
                                     <div>
                                         {payment.status !== 'paid' && (
-                                            <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                                            <Button
+                                                size="sm"
+                                                className="bg-green-600 hover:bg-green-700"
+                                                onClick={() => handleConfirmPayment(payment)}
+                                            >
                                                 <CheckCircle className="w-4 h-4 mr-1" />
                                                 Отметить
                                             </Button>
@@ -143,6 +173,86 @@ export default function DemoPaymentsPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Modal: Подтверждение оплаты */}
+            <Dialog open={confirmPaymentOpen} onOpenChange={setConfirmPaymentOpen}>
+                <DialogContent className="bg-slate-800 border-slate-700 text-white">
+                    <DialogHeader>
+                        <DialogTitle>Подтверждение оплаты</DialogTitle>
+                        <DialogDescription className="text-slate-400">
+                            Отметить платеж как оплаченный
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedPayment && (
+                        <div className="grid gap-4 py-4">
+                            <div className="bg-slate-700/50 p-4 rounded-lg space-y-2">
+                                <div className="flex justify-between">
+                                    <span className="text-slate-400">Арендатор:</span>
+                                    <span className="text-white font-medium">{selectedPayment.tenant}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-400">Место:</span>
+                                    <span className="text-white">{selectedPayment.space}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-400">Период:</span>
+                                    <span className="text-white">{selectedPayment.period}</span>
+                                </div>
+                                <div className="flex justify-between border-t border-slate-600 pt-2">
+                                    <span className="text-slate-400">Сумма:</span>
+                                    <span className="text-white font-bold">{selectedPayment.amount.toLocaleString()} ₸</span>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="payment-date">Дата оплаты *</Label>
+                                <Input
+                                    id="payment-date"
+                                    type="date"
+                                    defaultValue={new Date().toISOString().split('T')[0]}
+                                    className="bg-slate-700 border-slate-600"
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="payment-method">Способ оплаты *</Label>
+                                <Select>
+                                    <SelectTrigger className="bg-slate-700 border-slate-600">
+                                        <SelectValue placeholder="Выберите способ" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-slate-800 border-slate-700">
+                                        <SelectItem value="cash">Наличные</SelectItem>
+                                        <SelectItem value="card">Банковская карта</SelectItem>
+                                        <SelectItem value="transfer">Банковский перевод</SelectItem>
+                                        <SelectItem value="kaspi">Kaspi</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="payment-receipt">Номер квитанции/чека</Label>
+                                <Input
+                                    id="payment-receipt"
+                                    placeholder="№123456"
+                                    className="bg-slate-700 border-slate-600"
+                                />
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setConfirmPaymentOpen(false)} className="border-slate-600">
+                            Отмена
+                        </Button>
+                        <Button className="bg-green-600 hover:bg-green-700" onClick={() => {
+                            alert('Платеж подтвержден! (демо)');
+                            setConfirmPaymentOpen(false);
+                        }}>
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Подтвердить оплату
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

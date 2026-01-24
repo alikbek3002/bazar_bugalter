@@ -8,6 +8,24 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+
 
 // Mock data for demo
 const mockStats = {
@@ -28,6 +46,10 @@ const mockRecentPayments = [
 
 export default function DemoOwnerPage() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [newSpaceOpen, setNewSpaceOpen] = useState(false);
+    const [newContractOpen, setNewContractOpen] = useState(false);
+    const [newReportOpen, setNewReportOpen] = useState(false);
+
 
     const navItems = [
         { icon: Home, label: 'Обзор', href: '/demo/owner', active: true },
@@ -62,8 +84,8 @@ export default function DemoOwnerPage() {
                             key={item.label}
                             href={item.href}
                             className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${item.active
-                                    ? 'bg-blue-600 text-white'
-                                    : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+                                ? 'bg-blue-600 text-white'
+                                : 'text-slate-400 hover:bg-slate-700 hover:text-white'
                                 }`}
                         >
                             <item.icon className="w-5 h-5" />
@@ -154,7 +176,10 @@ export default function DemoOwnerPage() {
 
                     {/* Quick Actions */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Card className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 border-blue-500/30 cursor-pointer hover:border-blue-400/50 transition-colors">
+                        <Card
+                            className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 border-blue-500/30 cursor-pointer hover:border-blue-400/50 transition-colors"
+                            onClick={() => setNewSpaceOpen(true)}
+                        >
                             <CardContent className="p-6 flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-lg bg-blue-500/30 flex items-center justify-center">
                                     <PlusCircle className="w-6 h-6 text-blue-400" />
@@ -167,7 +192,10 @@ export default function DemoOwnerPage() {
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-gradient-to-br from-green-600/20 to-green-800/20 border-green-500/30 cursor-pointer hover:border-green-400/50 transition-colors">
+                        <Card
+                            className="bg-gradient-to-br from-green-600/20 to-green-800/20 border-green-500/30 cursor-pointer hover:border-green-400/50 transition-colors"
+                            onClick={() => setNewContractOpen(true)}
+                        >
                             <CardContent className="p-6 flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-lg bg-green-500/30 flex items-center justify-center">
                                     <FileText className="w-6 h-6 text-green-400" />
@@ -180,7 +208,10 @@ export default function DemoOwnerPage() {
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 border-purple-500/30 cursor-pointer hover:border-purple-400/50 transition-colors">
+                        <Card
+                            className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 border-purple-500/30 cursor-pointer hover:border-purple-400/50 transition-colors"
+                            onClick={() => setNewReportOpen(true)}
+                        >
                             <CardContent className="p-6 flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-lg bg-purple-500/30 flex items-center justify-center">
                                     <BarChart3 className="w-6 h-6 text-purple-400" />
@@ -211,10 +242,10 @@ export default function DemoOwnerPage() {
                                         <div className="text-right">
                                             <p className="font-semibold text-white">{payment.amount.toLocaleString()} ₸</p>
                                             <span className={`text-xs px-2 py-1 rounded-full ${payment.status === 'paid'
-                                                    ? 'bg-green-500/20 text-green-400'
-                                                    : payment.status === 'pending'
-                                                        ? 'bg-yellow-500/20 text-yellow-400'
-                                                        : 'bg-red-500/20 text-red-400'
+                                                ? 'bg-green-500/20 text-green-400'
+                                                : payment.status === 'pending'
+                                                    ? 'bg-yellow-500/20 text-yellow-400'
+                                                    : 'bg-red-500/20 text-red-400'
                                                 }`}>
                                                 {payment.status === 'paid' ? 'Оплачено' : payment.status === 'pending' ? 'Ожидает' : 'Просрочено'}
                                             </span>
@@ -226,6 +257,193 @@ export default function DemoOwnerPage() {
                     </Card>
                 </div>
             </main>
+
+            {/* Modal: Новое место */}
+            <Dialog open={newSpaceOpen} onOpenChange={setNewSpaceOpen}>
+                <DialogContent className="bg-slate-800 border-slate-700 text-white">
+                    <DialogHeader>
+                        <DialogTitle>Добавить торговое место</DialogTitle>
+                        <DialogDescription className="text-slate-400">
+                            Создание нового торгового места на рынке
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="space-code">Код места *</Label>
+                            <Input id="space-code" placeholder="A-01" className="bg-slate-700 border-slate-600" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="space-sector">Сектор *</Label>
+                            <Input id="space-sector" placeholder="A" className="bg-slate-700 border-slate-600" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="space-type">Тип места *</Label>
+                            <Select>
+                                <SelectTrigger className="bg-slate-700 border-slate-600">
+                                    <SelectValue placeholder="Выберите тип" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-800 border-slate-700">
+                                    <SelectItem value="kiosk">Киоск</SelectItem>
+                                    <SelectItem value="pavilion">Павильон</SelectItem>
+                                    <SelectItem value="open_space">Открытое место</SelectItem>
+                                    <SelectItem value="container">Контейнер</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="space-area">Площадь (м²) *</Label>
+                            <Input id="space-area" type="number" placeholder="24" className="bg-slate-700 border-slate-600" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="space-status">Статус *</Label>
+                            <Select>
+                                <SelectTrigger className="bg-slate-700 border-slate-600">
+                                    <SelectValue placeholder="Выберите статус" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-800 border-slate-700">
+                                    <SelectItem value="vacant">Свободно</SelectItem>
+                                    <SelectItem value="occupied">Занято</SelectItem>
+                                    <SelectItem value="maintenance">Обслуживание</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setNewSpaceOpen(false)} className="border-slate-600">
+                            Отмена
+                        </Button>
+                        <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
+                            alert('Место добавлено! (демо)');
+                            setNewSpaceOpen(false);
+                        }}>
+                            Создать место
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Modal: Новый договор */}
+            <Dialog open={newContractOpen} onOpenChange={setNewContractOpen}>
+                <DialogContent className="bg-slate-800 border-slate-700 text-white">
+                    <DialogHeader>
+                        <DialogTitle>Новый договор аренды</DialogTitle>
+                        <DialogDescription className="text-slate-400">
+                            Оформление договора аренды торгового места
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="contract-tenant">Арендатор *</Label>
+                            <Select>
+                                <SelectTrigger className="bg-slate-700 border-slate-600">
+                                    <SelectValue placeholder="Выберите арендатора" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-800 border-slate-700">
+                                    <SelectItem value="1">ИП Иванов А.А.</SelectItem>
+                                    <SelectItem value="2">ООО Ромашка</SelectItem>
+                                    <SelectItem value="3">ИП Петров Б.Б.</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="contract-space">Торговое место *</Label>
+                            <Select>
+                                <SelectTrigger className="bg-slate-700 border-slate-600">
+                                    <SelectValue placeholder="Выберите место" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-800 border-slate-700">
+                                    <SelectItem value="A-01">A-01 (Павильон, 24 м²)</SelectItem>
+                                    <SelectItem value="A-02">A-02 (Киоск, 12 м²)</SelectItem>
+                                    <SelectItem value="C-01">C-01 (Павильон, 36 м²)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="contract-start">Дата начала *</Label>
+                            <Input id="contract-start" type="date" className="bg-slate-700 border-slate-600" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="contract-end">Дата окончания *</Label>
+                            <Input id="contract-end" type="date" className="bg-slate-700 border-slate-600" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="contract-amount">Сумма аренды (₸/месяц) *</Label>
+                            <Input id="contract-amount" type="number" placeholder="45000" className="bg-slate-700 border-slate-600" />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setNewContractOpen(false)} className="border-slate-600">
+                            Отмена
+                        </Button>
+                        <Button className="bg-green-600 hover:bg-green-700" onClick={() => {
+                            alert('Договор создан! (демо)');
+                            setNewContractOpen(false);
+                        }}>
+                            Создать договор
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Modal: Сформировать отчёт */}
+            <Dialog open={newReportOpen} onOpenChange={setNewReportOpen}>
+                <DialogContent className="bg-slate-800 border-slate-700 text-white">
+                    <DialogHeader>
+                        <DialogTitle>Сформировать отчёт</DialogTitle>
+                        <DialogDescription className="text-slate-400">
+                            Выберите параметры для формирования отчёта
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="report-type">Тип отчёта *</Label>
+                            <Select>
+                                <SelectTrigger className="bg-slate-700 border-slate-600">
+                                    <SelectValue placeholder="Выберите тип отчёта" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-800 border-slate-700">
+                                    <SelectItem value="payments">Отчёт по платежам</SelectItem>
+                                    <SelectItem value="occupancy">Отчёт по занятости</SelectItem>
+                                    <SelectItem value="revenue">Отчёт по доходам</SelectItem>
+                                    <SelectItem value="tenants">Отчёт по арендаторам</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="report-start">Период с *</Label>
+                            <Input id="report-start" type="date" className="bg-slate-700 border-slate-600" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="report-end">Период по *</Label>
+                            <Input id="report-end" type="date" className="bg-slate-700 border-slate-600" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="report-format">Формат экспорта *</Label>
+                            <Select>
+                                <SelectTrigger className="bg-slate-700 border-slate-600">
+                                    <SelectValue placeholder="Выберите формат" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-800 border-slate-700">
+                                    <SelectItem value="pdf">PDF</SelectItem>
+                                    <SelectItem value="excel">Excel</SelectItem>
+                                    <SelectItem value="csv">CSV</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setNewReportOpen(false)} className="border-slate-600">
+                            Отмена
+                        </Button>
+                        <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => {
+                            alert('Отчёт сформирован! (демо)');
+                            setNewReportOpen(false);
+                        }}>
+                            Сформировать
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

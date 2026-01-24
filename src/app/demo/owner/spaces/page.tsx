@@ -1,10 +1,28 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, MapPin, ArrowLeft, Building2 } from 'lucide-react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 // Mock data
 const mockSpaces = [
@@ -36,11 +54,20 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function DemoSpacesPage() {
+    const [addSpaceOpen, setAddSpaceOpen] = useState(false);
+    const [viewSpaceOpen, setViewSpaceOpen] = useState(false);
+    const [selectedSpace, setSelectedSpace] = useState<typeof mockSpaces[0] | null>(null);
+
     const stats = {
         total: mockSpaces.length,
         occupied: mockSpaces.filter(s => s.status === 'occupied').length,
         vacant: mockSpaces.filter(s => s.status === 'vacant').length,
         maintenance: mockSpaces.filter(s => s.status === 'maintenance').length,
+    };
+
+    const handleViewSpace = (space: typeof mockSpaces[0]) => {
+        setSelectedSpace(space);
+        setViewSpaceOpen(true);
     };
 
     return (
@@ -57,7 +84,7 @@ export default function DemoSpacesPage() {
                         <h1 className="text-3xl font-bold text-white">Торговые места</h1>
                         <p className="text-slate-400">Управление торговыми местами рынка</p>
                     </div>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
+                    <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setAddSpaceOpen(true)}>
                         <Plus className="mr-2 h-4 w-4" />
                         Добавить место
                     </Button>
@@ -134,7 +161,12 @@ export default function DemoSpacesPage() {
                                         </Badge>
                                     </div>
                                     <div>
-                                        <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-slate-400 hover:text-white"
+                                            onClick={() => handleViewSpace(space)}
+                                        >
                                             Открыть
                                         </Button>
                                     </div>
@@ -144,6 +176,150 @@ export default function DemoSpacesPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Modal: Добавить место */}
+            <Dialog open={addSpaceOpen} onOpenChange={setAddSpaceOpen}>
+                <DialogContent className="bg-slate-800 border-slate-700 text-white">
+                    <DialogHeader>
+                        <DialogTitle>Добавить торговое место</DialogTitle>
+                        <DialogDescription className="text-slate-400">
+                            Создание нового торгового места на рынке
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="space-code">Код места *</Label>
+                            <Input id="space-code" placeholder="A-01" className="bg-slate-700 border-slate-600" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="space-sector">Сектор *</Label>
+                            <Input id="space-sector" placeholder="A" className="bg-slate-700 border-slate-600" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="space-type">Тип места *</Label>
+                            <Select>
+                                <SelectTrigger className="bg-slate-700 border-slate-600">
+                                    <SelectValue placeholder="Выберите тип" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-800 border-slate-700">
+                                    <SelectItem value="kiosk">Киоск</SelectItem>
+                                    <SelectItem value="pavilion">Павильон</SelectItem>
+                                    <SelectItem value="open_space">Открытое место</SelectItem>
+                                    <SelectItem value="container">Контейнер</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="space-area">Площадь (м²) *</Label>
+                            <Input id="space-area" type="number" placeholder="24" className="bg-slate-700 border-slate-600" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="space-status">Статус *</Label>
+                            <Select>
+                                <SelectTrigger className="bg-slate-700 border-slate-600">
+                                    <SelectValue placeholder="Выберите статус" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-800 border-slate-700">
+                                    <SelectItem value="vacant">Свободно</SelectItem>
+                                    <SelectItem value="occupied">Занято</SelectItem>
+                                    <SelectItem value="maintenance">Обслуживание</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setAddSpaceOpen(false)} className="border-slate-600">
+                            Отмена
+                        </Button>
+                        <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
+                            alert('Место добавлено! (демо)');
+                            setAddSpaceOpen(false);
+                        }}>
+                            Создать место
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Modal: Просмотр/Редактирование места */}
+            <Dialog open={viewSpaceOpen} onOpenChange={setViewSpaceOpen}>
+                <DialogContent className="bg-slate-800 border-slate-700 text-white">
+                    <DialogHeader>
+                        <DialogTitle>Торговое место {selectedSpace?.code}</DialogTitle>
+                        <DialogDescription className="text-slate-400">
+                            Просмотр и редактирование информации о месте
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedSpace && (
+                        <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="edit-code">Код места *</Label>
+                                <Input id="edit-code" defaultValue={selectedSpace.code} className="bg-slate-700 border-slate-600" />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="edit-sector">Сектор *</Label>
+                                <Input id="edit-sector" defaultValue={selectedSpace.sector} className="bg-slate-700 border-slate-600" />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="edit-type">Тип места *</Label>
+                                <Select defaultValue={selectedSpace.space_type}>
+                                    <SelectTrigger className="bg-slate-700 border-slate-600">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-slate-800 border-slate-700">
+                                        <SelectItem value="kiosk">Киоск</SelectItem>
+                                        <SelectItem value="pavilion">Павильон</SelectItem>
+                                        <SelectItem value="open_space">Открытое место</SelectItem>
+                                        <SelectItem value="container">Контейнер</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="edit-area">Площадь (м²) *</Label>
+                                <Input id="edit-area" type="number" defaultValue={selectedSpace.area_sqm} className="bg-slate-700 border-slate-600" />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="edit-status">Статус *</Label>
+                                <Select defaultValue={selectedSpace.status}>
+                                    <SelectTrigger className="bg-slate-700 border-slate-600">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-slate-800 border-slate-700">
+                                        <SelectItem value="vacant">Свободно</SelectItem>
+                                        <SelectItem value="occupied">Занято</SelectItem>
+                                        <SelectItem value="maintenance">Обслуживание</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            {selectedSpace.business_type && (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="edit-business">Тип бизнеса</Label>
+                                    <Input id="edit-business" defaultValue={selectedSpace.business_type} className="bg-slate-700 border-slate-600" />
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setViewSpaceOpen(false)} className="border-slate-600">
+                            Закрыть
+                        </Button>
+                        <Button variant="destructive" onClick={() => {
+                            if (confirm('Удалить это место?')) {
+                                alert('Место удалено! (демо)');
+                                setViewSpaceOpen(false);
+                            }
+                        }}>
+                            Удалить
+                        </Button>
+                        <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
+                            alert('Изменения сохранены! (демо)');
+                            setViewSpaceOpen(false);
+                        }}>
+                            Сохранить
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
