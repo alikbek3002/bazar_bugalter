@@ -1,12 +1,11 @@
-// Скрипт для создания тестовых пользователей через Supabase Admin API
+// Скрипт для создания пользователей через Supabase Admin API
 // Запустить: node supabase/create_users.mjs
 
 import { createClient } from '@supabase/supabase-js';
 
-// Service Role Key нужен для создания пользователей
-// Найди его в Supabase Dashboard -> Settings -> API -> service_role (secret)
+// Service Role Key
 const SUPABASE_URL = 'https://iqnwhpmcslujgckzmwgw.supabase.co';
-const SERVICE_ROLE_KEY = 'YOUR_SERVICE_ROLE_KEY_HERE'; // Замени на свой service_role key!
+const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxbndocG1jc2x1amdja3ptd2d3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTIwNjg2MCwiZXhwIjoyMDg0NzgyODYwfQ.HLeRaqu-TfpUioev4agrqBVsjBQwSdvqPN2oZgl4pVw';
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
     auth: {
@@ -17,28 +16,24 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 
 const users = [
     {
-        email: 'owner@bazar.test',
-        password: 'Owner123!',
+        email: 'owner@bazar.kg',
+        password: 'owner',
         role: 'owner',
         full_name: 'Владелец Базара'
     },
     {
-        email: 'accountant@bazar.test',
-        password: 'Accountant123!',
+        email: 'accountant@bazar.kg',
+        password: 'accountant',
         role: 'accountant',
         full_name: 'Бухгалтер Базара'
-    },
-    {
-        email: 'tenant@bazar.test',
-        password: 'Tenant123!',
-        role: 'tenant',
-        full_name: 'Арендатор Тест'
     }
 ];
 
 async function createUsers() {
+    console.log('🚀 Создание пользователей...\n');
+
     for (const user of users) {
-        console.log(`Creating user: ${user.email}...`);
+        console.log(`📧 Создаю: ${user.email}...`);
 
         // Создаем пользователя через Admin API
         const { data, error } = await supabase.auth.admin.createUser({
@@ -51,46 +46,63 @@ async function createUsers() {
         });
 
         if (error) {
-            console.error(`Error creating ${user.email}:`, error.message);
+            if (error.message.includes('already been registered')) {
+                console.log(`   ⚠️  Пользователь уже существует, обновляю...`);
+
+                // Находим существующего пользователя
+                const { data: { users: existingUsers } } = await supabase.auth.admin.listUsers();
+                const existingUser = existingUsers?.find(u => u.email === user.email);
+
+                if (existingUser) {
+                    // Обновляем профиль
+                    await supabase
+                        .from('profiles')
+                        .upsert({
+                            id: existingUser.id,
+                            role: user.role,
+                            full_name: user.full_name,
+                            email: user.email
+                        });
+                    console.log(`   ✅ Профиль обновлён`);
+                }
+                continue;
+            }
+            console.error(`   ❌ Ошибка: ${error.message}`);
             continue;
         }
 
-        console.log(`Created user: ${user.email} with ID: ${data.user.id}`);
+        console.log(`   ✅ Создан с ID: ${data.user.id}`);
 
         // Обновляем роль в профиле
         const { error: updateError } = await supabase
             .from('profiles')
-            .update({ role: user.role, full_name: user.full_name })
-            .eq('id', data.user.id);
+            .upsert({
+                id: data.user.id,
+                role: user.role,
+                full_name: user.full_name,
+                email: user.email
+            });
 
         if (updateError) {
-            console.error(`Error updating role for ${user.email}:`, updateError.message);
+            console.error(`   ⚠️  Ошибка обновления профиля: ${updateError.message}`);
         } else {
-            console.log(`Updated role to: ${user.role}`);
+            console.log(`   ✅ Роль установлена: ${user.role}`);
         }
 
-        // Если это арендатор, создаем запись в tenants
-        if (user.role === 'tenant') {
-            const { error: tenantError } = await supabase
-                .from('tenants')
-                .insert({
-                    user_id: data.user.id,
-                    full_name: user.full_name,
-                    phone: '+7 700 123 4567',
-                    email: user.email
-                });
-
-            if (tenantError) {
-                console.error(`Error creating tenant record:`, tenantError.message);
-            } else {
-                console.log(`Created tenant record`);
-            }
-        }
-
-        console.log('---');
+        console.log('');
     }
 
-    console.log('Done!');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('✅ Готово! Данные для входа:');
+    console.log('');
+    console.log('👑 ВЛАДЕЛЕЦ:');
+    console.log('   Email: owner@bazar.kg');
+    console.log('   Пароль: owner');
+    console.log('');
+    console.log('📊 БУХГАЛТЕР:');
+    console.log('   Email: accountant@bazar.kg');
+    console.log('   Пароль: accountant');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 }
 
 createUsers();

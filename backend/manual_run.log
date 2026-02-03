@@ -1,0 +1,14 @@
+Initializing Supabase Admin client...
+Supabase Admin client initialized
+Loading auth middleware...
+🚀 API Server running on http://localhost:3002
+📋 Health check: http://localhost:3002/api/health
+[2026-02-03T10:16:25.907Z] GET /api/health
+Health check hit!
+[2026-02-03T10:16:35.547Z] GET /api/health
+Health check hit!
+[2026-02-03T10:16:35.554Z] POST /api/auth/login
+[Login Attempt] Email: owner@bazar.kg, Password length: 5
+[Login Found Profile] ID: a1111111-1111-1111-1111-111111111111, Role: owner, Has Password: true
+[Login Success]
+[2026-02-03T10:23:25.298Z] OPTIONS /api/auth/login

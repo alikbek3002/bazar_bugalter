@@ -1,0 +1,50 @@
+Initializing Supabase Admin client...
+Supabase Admin client initialized
+Loading auth middleware...
+CORS Origin configured as: http://localhost:3000
+🚀 API Server running on http://localhost:3002
+📋 Health check: http://localhost:3002/api/health
+[2026-02-03T10:24:49.229Z] OPTIONS /api/auth/login
+[2026-02-03T10:28:10.136Z] OPTIONS /api/auth/login
+[2026-02-03T10:28:10.140Z] POST /api/auth/login
+[Login Attempt] Email: owner@bazar.kg, Password length: 5
+[Login Found Profile] ID: a1111111-1111-1111-1111-111111111111, Role: owner, Has Password: true
+[Login Success]
+[2026-02-03T10:28:30.866Z] OPTIONS /api/auth/login
+[2026-02-03T10:28:30.868Z] POST /api/auth/login
+[Login Attempt] Email: owner@bazar.kg, Password length: 5
+[Login Found Profile] ID: a1111111-1111-1111-1111-111111111111, Role: owner, Has Password: true
+[Login Success]
+[2026-02-03T10:32:23.419Z] OPTIONS /api/auth/login
+[2026-02-03T10:32:23.422Z] POST /api/auth/login
+[Login Attempt] Email: owner@bazar.kg, Password length: 5
+[Login Found Profile] ID: a1111111-1111-1111-1111-111111111111, Role: owner, Has Password: true
+[Login Success]
+[2026-02-03T10:32:24.803Z] OPTIONS /api/stats/overview
+[2026-02-03T10:32:24.810Z] OPTIONS /api/stats/overview
+[2026-02-03T10:32:24.812Z] GET /api/stats/overview
+[2026-02-03T10:32:26.487Z] GET /api/stats/overview
+[2026-02-03T10:32:33.716Z] OPTIONS /api/spaces
+[2026-02-03T10:32:33.717Z] OPTIONS /api/spaces
+[2026-02-03T10:32:33.718Z] GET /api/spaces
+[2026-02-03T10:32:34.730Z] GET /api/spaces
+[2026-02-03T10:32:45.794Z] OPTIONS /api/stats/overview
+[2026-02-03T10:32:45.796Z] OPTIONS /api/stats/overview
+[2026-02-03T10:32:45.797Z] GET /api/stats/overview
+[2026-02-03T10:32:49.438Z] GET /api/stats/overview
+[2026-02-03T10:34:25.250Z] OPTIONS /api/spaces
+[2026-02-03T10:34:25.252Z] OPTIONS /api/spaces
+[2026-02-03T10:34:25.254Z] GET /api/spaces
+[2026-02-03T10:34:26.277Z] GET /api/spaces
+[2026-02-03T10:34:27.225Z] OPTIONS /api/payments?limit=100
+[2026-02-03T10:34:27.226Z] OPTIONS /api/payments?limit=100
+[2026-02-03T10:34:27.227Z] GET /api/payments?limit=100
+[2026-02-03T10:34:28.062Z] GET /api/payments?limit=100
+[2026-02-03T10:34:29.890Z] OPTIONS /api/stats/overview
+[2026-02-03T10:34:29.891Z] OPTIONS /api/stats/overview
+[2026-02-03T10:34:29.892Z] GET /api/stats/overview
+[2026-02-03T10:34:30.644Z] GET /api/stats/overview
+[2026-02-03T10:37:21.144Z] OPTIONS /api/payments?limit=100
+[2026-02-03T10:37:21.145Z] OPTIONS /api/payments?limit=100
+[2026-02-03T10:37:21.147Z] GET /api/payments?limit=100
+[2026-02-03T10:37:22.236Z] GET /api/payments?limit=100

@@ -1,0 +1,6 @@
+
+> bazar-bugalter-api@1.0.0 dev
+> tsx watch src/index.ts
+
+🚀 API Server running on http://localhost:3002
+📋 Health check: http://localhost:3002/api/health

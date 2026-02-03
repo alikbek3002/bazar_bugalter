@@ -1,0 +1,29 @@
+Initializing Supabase Admin client...
+Supabase Admin client initialized
+Loading auth middleware...
+node:events:498
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::3002
+    at Server.setupListenHandle [as _listen2] (node:net:1902:16)
+    at listenInCluster (node:net:1959:12)
+    at Server.listen (node:net:2061:7)
+    at Function.listen (/Users/chyngyz/Desktop/bazar_bugalter/backend/node_modules/express/lib/application.js:635:24)
+    at statsRoutes (/Users/chyngyz/Desktop/bazar_bugalter/backend/src/index.ts:64:5)
+    at Object.<anonymous> (/Users/chyngyz/Desktop/bazar_bugalter/backend/src/index.ts:67:2)
+    at Module._compile (node:internal/modules/cjs/loader:1504:14)
+    at Object.transformer (/Users/chyngyz/Desktop/bazar_bugalter/backend/node_modules/tsx/dist/register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1282:32)
+    at Module._load (node:internal/modules/cjs/loader:1098:12)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1938:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '::',
+  port: 3002
+}
+
+Node.js v22.5.1

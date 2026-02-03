@@ -1,0 +1,35 @@
+
+> bazar_bugalter@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.35.34.247:3000
+- Environments: .env
+
+✓ Starting...
+✓ Ready in 737ms
+ GET / 200 in 349ms (compile: 253ms, render: 95ms)
+ GET /login 200 in 174ms (compile: 81ms, render: 92ms)
+ GET /login 200 in 72ms (compile: 14ms, render: 58ms)
+ GET /owner/overview 200 in 274ms (compile: 241ms, render: 33ms)
+ GET /login 200 in 39ms (compile: 6ms, render: 33ms)
+ GET /login 200 in 16ms (compile: 1736µs, render: 15ms)
+ GET /login 200 in 54ms (compile: 7ms, render: 47ms)
+ GET /owner/overview 200 in 37ms (compile: 7ms, render: 30ms)
+ GET /login 200 in 33ms (compile: 4ms, render: 28ms)
+ GET /login 200 in 17ms (compile: 4ms, render: 14ms)
+✓ Compiled in 407ms
+ GET /login 200 in 150ms (compile: 12ms, render: 139ms)
+ GET / 200 in 156ms (compile: 82ms, render: 74ms)
+ GET /login 200 in 104ms (compile: 1313µs, render: 103ms)
+✓ Compiled in 55ms
+ GET /owner/overview 200 in 222ms (compile: 97ms, render: 125ms)
+ GET /owner/spaces 200 in 312ms (compile: 302ms, render: 10ms)
+ GET /owner/spaces/new 200 in 310ms (compile: 300ms, render: 10ms)
+ GET /owner/overview 200 in 29ms (compile: 8ms, render: 20ms)
+ GET /owner/spaces 200 in 48ms (compile: 23ms, render: 25ms)
+ GET /owner/payments 200 in 267ms (compile: 258ms, render: 9ms)
+ GET /owner/overview 200 in 27ms (compile: 6ms, render: 21ms)
+ GET /owner/reports 200 in 816ms (compile: 309ms, render: 507ms)
+ GET /owner/payments 200 in 44ms (compile: 9ms, render: 34ms)
