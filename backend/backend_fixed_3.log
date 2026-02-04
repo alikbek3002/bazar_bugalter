@@ -1,0 +1,6 @@
+Initializing Supabase Admin client...
+Supabase Admin client initialized
+Loading auth middleware...
+CORS Origin configured as: http://localhost:3000
+🚀 API Server running on http://localhost:3002
+📋 Health check: http://localhost:3002/api/health

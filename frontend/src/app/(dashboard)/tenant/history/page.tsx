@@ -86,15 +86,15 @@ export default async function TenantHistoryPage() {
                                         )}
                                     </div>
                                     <div className="text-right space-y-1">
-                                        <p className="font-bold text-lg">{payment.charged_amount.toLocaleString('ru-RU')} ₸</p>
+                                        <p className="font-bold text-lg">{payment.charged_amount.toLocaleString('ru-RU')} с</p>
                                         {payment.paid_amount > 0 && payment.paid_amount < payment.charged_amount && (
                                             <p className="text-xs text-muted-foreground">
-                                                Оплачено: {payment.paid_amount.toLocaleString('ru-RU')} ₸
+                                                Оплачено: {payment.paid_amount.toLocaleString('ru-RU')} с
                                             </p>
                                         )}
                                         {payment.discount_amount > 0 && (
                                             <p className="text-xs text-green-600">
-                                                Скидка: {payment.discount_amount.toLocaleString('ru-RU')} ₸
+                                                Скидка: {payment.discount_amount.toLocaleString('ru-RU')} с
                                             </p>
                                         )}
                                         <Badge

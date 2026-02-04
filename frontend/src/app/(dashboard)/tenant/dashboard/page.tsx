@@ -86,7 +86,7 @@ export default async function TenantDashboardPage() {
                         <CreditCard className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{totalMonthlyRent.toLocaleString('ru-RU')} ₸</div>
+                        <div className="text-2xl font-bold">{totalMonthlyRent.toLocaleString('ru-RU')} с</div>
                         <p className="text-xs text-muted-foreground">Общая сумма аренды</p>
                     </CardContent>
                 </Card>
@@ -104,7 +104,7 @@ export default async function TenantDashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className={`text-2xl font-bold ${totalDebt > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                            {totalDebt > 0 ? `${totalDebt.toLocaleString('ru-RU')} ₸` : 'Нет задолженности'}
+                            {totalDebt > 0 ? `${totalDebt.toLocaleString('ru-RU')} с` : 'Нет задолженности'}
                         </div>
                         {totalDebt > 0 && (
                             <p className="text-xs text-muted-foreground">
@@ -144,7 +144,7 @@ export default async function TenantDashboardPage() {
                                         </p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-bold text-lg">{contract.monthly_rent.toLocaleString('ru-RU')} ₸</p>
+                                        <p className="font-bold text-lg">{contract.monthly_rent.toLocaleString('ru-RU')} с</p>
                                         <p className="text-xs text-muted-foreground">в месяц</p>
                                     </div>
                                 </div>
@@ -184,7 +184,7 @@ export default async function TenantDashboardPage() {
                                         )}
                                     </div>
                                     <div className="text-right space-y-1">
-                                        <p className="font-bold">{payment.charged_amount.toLocaleString('ru-RU')} ₸</p>
+                                        <p className="font-bold">{payment.charged_amount.toLocaleString('ru-RU')} с</p>
                                         <Badge
                                             variant={
                                                 payment.status === 'paid' ? 'default' :

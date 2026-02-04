@@ -106,7 +106,7 @@ export default function OwnerPaymentsPage() {
                     <CardContent>
                         <div className="text-2xl font-bold">{pendingPayments.length}</div>
                         <p className="text-xs text-muted-foreground">
-                            {totalPending.toLocaleString('ru-RU')} ₸
+                            {totalPending.toLocaleString('ru-RU')} с
                         </p>
                     </CardContent>
                 </Card>
@@ -119,7 +119,7 @@ export default function OwnerPaymentsPage() {
                     <CardContent>
                         <div className="text-2xl font-bold text-red-600">{overduePayments.length}</div>
                         <p className="text-xs text-muted-foreground">
-                            {totalOverdue.toLocaleString('ru-RU')} ₸
+                            {totalOverdue.toLocaleString('ru-RU')} с
                         </p>
                     </CardContent>
                 </Card>
@@ -132,7 +132,7 @@ export default function OwnerPaymentsPage() {
                     <CardContent>
                         <div className="text-2xl font-bold text-green-600">{paidPayments.length}</div>
                         <p className="text-xs text-muted-foreground">
-                            {totalPaid.toLocaleString('ru-RU')} ₸
+                            {totalPaid.toLocaleString('ru-RU')} с
                         </p>
                     </CardContent>
                 </Card>
@@ -175,9 +175,9 @@ export default function OwnerPaymentsPage() {
                                     <div className="text-muted-foreground">
                                         {new Date(payment.period_month).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}
                                     </div>
-                                    <div className="font-medium">{payment.charged_amount.toLocaleString('ru-RU')} ₸</div>
+                                    <div className="font-medium">{payment.charged_amount.toLocaleString('ru-RU')} с</div>
                                     <div className={payment.paid_amount > 0 ? 'text-green-600' : 'text-muted-foreground'}>
-                                        {payment.paid_amount.toLocaleString('ru-RU')} ₸
+                                        {payment.paid_amount.toLocaleString('ru-RU')} с
                                     </div>
                                     <div>
                                         <Badge className={STATUS_COLORS[payment.status as keyof typeof STATUS_COLORS]}>

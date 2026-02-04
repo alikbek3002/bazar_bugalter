@@ -1,0 +1,30 @@
+Initializing Supabase Admin client...
+Supabase Admin client initialized
+Loading auth middleware...
+CORS Origin configured as: http://localhost:3000
+🚀 API Server running on http://localhost:3002
+📋 Health check: http://localhost:3002/api/health
+[2026-02-03T11:03:44.266Z] OPTIONS /api/contracts
+[2026-02-03T11:03:44.271Z] GET /api/contracts
+[2026-02-03T11:03:44.303Z] OPTIONS /api/contracts
+Get contracts error: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column market_spaces_1.type does not exist'
+}
+[2026-02-03T11:03:45.542Z] GET /api/contracts
+Get contracts error: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column market_spaces_1.type does not exist'
+}
+[2026-02-03T11:04:36.660Z] OPTIONS /api/tenants
+[2026-02-03T11:04:36.661Z] OPTIONS /api/tenants
+[2026-02-03T11:04:36.663Z] GET /api/tenants
+[2026-02-03T11:04:37.506Z] GET /api/tenants
+[2026-02-03T11:05:07.881Z] OPTIONS /api/payments?limit=100
+[2026-02-03T11:05:07.883Z] OPTIONS /api/payments?limit=100
+[2026-02-03T11:05:07.884Z] GET /api/payments?limit=100
+[2026-02-03T11:05:08.695Z] GET /api/payments?limit=100

@@ -71,7 +71,7 @@ export default async function OwnerReportsPage() {
                         <TrendingUp className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{monthlyIncome.toLocaleString('ru-RU')} ₸</div>
+                        <div className="text-2xl font-bold">{monthlyIncome.toLocaleString('ru-RU')} с</div>
                         <p className="text-xs text-muted-foreground">
                             Сумма аренды активных договоров
                         </p>
@@ -84,7 +84,7 @@ export default async function OwnerReportsPage() {
                         <CreditCard className="h-4 w-4 text-emerald-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-600">{collectedThisMonth.toLocaleString('ru-RU')} ₸</div>
+                        <div className="text-2xl font-bold text-green-600">{collectedThisMonth.toLocaleString('ru-RU')} с</div>
                         <p className="text-xs text-muted-foreground">
                             {paidThisMonth.length} платежей
                         </p>
@@ -97,7 +97,7 @@ export default async function OwnerReportsPage() {
                         <TrendingDown className="h-4 w-4 text-red-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-red-600">{totalDebt.toLocaleString('ru-RU')} ₸</div>
+                        <div className="text-2xl font-bold text-red-600">{totalDebt.toLocaleString('ru-RU')} с</div>
                         <p className="text-xs text-muted-foreground">
                             Неоплаченные платежи
                         </p>
@@ -151,7 +151,7 @@ export default async function OwnerReportsPage() {
                             <span className="font-bold">
                                 {activeContracts.length > 0
                                     ? Math.round(monthlyIncome / activeContracts.length).toLocaleString('ru-RU')
-                                    : 0} ₸
+                                    : 0} с
                             </span>
                         </div>
                     </CardContent>

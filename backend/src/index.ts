@@ -9,6 +9,7 @@ import tenantsRoutes from './routes/tenants.js';
 import contractsRoutes from './routes/contracts.js';
 import paymentsRoutes from './routes/payments.js';
 import statsRoutes from './routes/stats.js';
+import uploadRoutes from './routes/upload.js';
 
 dotenv.config();
 
@@ -48,6 +49,7 @@ app.use('/api/tenants', authMiddleware, tenantsRoutes);
 app.use('/api/contracts', authMiddleware, contractsRoutes);
 app.use('/api/payments', authMiddleware, paymentsRoutes);
 app.use('/api/stats', authMiddleware, statsRoutes);
+app.use('/api/upload', authMiddleware, uploadRoutes);
 
 // Error handling
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {

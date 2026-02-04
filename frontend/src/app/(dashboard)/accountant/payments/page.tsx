@@ -43,7 +43,7 @@ export default async function AccountantPaymentsPage() {
                     <CardContent>
                         <div className="text-2xl font-bold">{pendingPayments.length}</div>
                         <p className="text-xs text-muted-foreground">
-                            На сумму {totalPending.toLocaleString('ru-RU')} ₸
+                            На сумму {totalPending.toLocaleString('ru-RU')} с
                         </p>
                     </CardContent>
                 </Card>
@@ -56,7 +56,7 @@ export default async function AccountantPaymentsPage() {
                     <CardContent>
                         <div className="text-2xl font-bold text-red-600">{overduePayments.length}</div>
                         <p className="text-xs text-muted-foreground">
-                            Задолженность {totalOverdue.toLocaleString('ru-RU')} ₸
+                            Задолженность {totalOverdue.toLocaleString('ru-RU')} с
                         </p>
                     </CardContent>
                 </Card>
@@ -102,7 +102,7 @@ export default async function AccountantPaymentsPage() {
                                         </p>
                                     </div>
                                     <div className="text-right space-y-1">
-                                        <p className="font-bold">{payment.charged_amount.toLocaleString('ru-RU')} ₸</p>
+                                        <p className="font-bold">{payment.charged_amount.toLocaleString('ru-RU')} с</p>
                                         <Badge
                                             variant={
                                                 payment.status === 'paid' ? 'default' :

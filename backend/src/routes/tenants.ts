@@ -42,7 +42,7 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response) => {
                 *,
                 contracts:lease_contracts(
                     *,
-                    space:market_spaces(code, type)
+                    space:market_spaces(code, space_type)
                 )
             `)
             .eq('id', id)
@@ -68,42 +68,138 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response) => {
     }
 });
 
-// POST /api/tenants - Create new tenant
+// POST /api/tenants - Create new tenant with contract (requires document)
 router.post('/', requireRole('owner', 'accountant'), async (req: AuthenticatedRequest, res: Response) => {
     try {
-        const { full_name, phone, email, inn, company_name, address } = req.body;
+        const {
+            // Tenant data
+            full_name,
+            phone,
+            email,
+            inn,
+            company_name,
+            whatsapp,
+            telegram,
+            notes,
+            // Contract data
+            space_id,
+            start_date,
+            end_date,
+            monthly_rent,
+            payment_day,
+            deposit,
+            contract_file_url
+        } = req.body;
 
+        // Validate required fields
         if (!full_name || !phone) {
             return res.status(400).json({
                 success: false,
-                error: 'Full name and phone are required'
+                error: 'ФИО и телефон обязательны'
             });
         }
 
-        const { data, error } = await supabaseAdmin
+        if (!space_id || !start_date || !monthly_rent) {
+            return res.status(400).json({
+                success: false,
+                error: 'Торговое место, дата начала и месячная аренда обязательны'
+            });
+        }
+
+        if (!contract_file_url) {
+            return res.status(400).json({
+                success: false,
+                error: 'Документ договора обязателен'
+            });
+        }
+
+        // Check if space is available
+        const { data: existingContract } = await supabaseAdmin
+            .from('lease_contracts')
+            .select('id')
+            .eq('space_id', space_id)
+            .eq('status', 'active')
+            .single();
+
+        if (existingContract) {
+            return res.status(400).json({
+                success: false,
+                error: 'Это место уже занято'
+            });
+        }
+
+        // Step 1: Create tenant
+        const { data: tenant, error: tenantError } = await supabaseAdmin
             .from('tenants')
             .insert({
                 full_name,
                 phone,
                 email,
-                inn,
+                inn_idn: inn,
                 company_name,
-                address
+                whatsapp,
+                telegram,
+                notes
             })
             .select()
             .single();
 
-        if (error) throw error;
+        if (tenantError) throw tenantError;
+
+        // Fetch space details to get area and calculate rate
+        const { data: spaceData } = await supabaseAdmin
+            .from('market_spaces')
+            .select('area_sqm')
+            .eq('id', space_id)
+            .single();
+
+        const area = spaceData?.area_sqm || 0;
+        let rate = area > 0 ? Number((monthly_rent / area).toFixed(2)) : 0;
+        if (isNaN(rate)) rate = 0;
+
+        // Step 2: Create contract
+        const { data: contract, error: contractError } = await supabaseAdmin
+            .from('lease_contracts')
+            .insert({
+                tenant_id: tenant.id,
+                space_id,
+                start_date,
+                end_date: end_date || null,
+                monthly_rent,
+                payment_day: payment_day || 1,
+                deposit_amount: deposit || 0,
+                rate_per_sqm: rate,
+                contract_file_url,
+                status: 'active'
+            })
+            .select()
+            .single();
+
+        if (contractError) {
+            // Rollback: delete tenant if contract creation fails
+            await supabaseAdmin.from('tenants').delete().eq('id', tenant.id);
+            throw contractError;
+        }
+
+        // Step 3: Update space status to occupied
+        await supabaseAdmin
+            .from('market_spaces')
+            .update({ status: 'occupied' })
+            .eq('id', space_id);
 
         return res.status(201).json({
             success: true,
-            data
+            data: {
+                tenant,
+                contract
+            }
         });
-    } catch (error) {
-        console.error('Create tenant error:', error);
+    } catch (error: any) {
+        console.error('Create tenant with contract error:', JSON.stringify(error, null, 2));
         return res.status(500).json({
             success: false,
-            error: 'Failed to create tenant'
+            error: error.message || 'Ошибка создания арендатора',
+            details: error
         });
     }
 });

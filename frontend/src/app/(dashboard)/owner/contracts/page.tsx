@@ -161,7 +161,7 @@ export default function OwnerContractsPage() {
                                         {new Date(contract.start_date).toLocaleDateString('ru-RU')}
                                         {contract.end_date && ` — ${new Date(contract.end_date).toLocaleDateString('ru-RU')}`}
                                     </div>
-                                    <div className="font-medium">{contract.monthly_rent.toLocaleString('ru-RU')} ₸</div>
+                                    <div className="font-medium">{contract.monthly_rent.toLocaleString('ru-RU')} с</div>
                                     <div>
                                         <Badge className={STATUS_COLORS[contract.status as keyof typeof STATUS_COLORS]}>
                                             {CONTRACT_STATUSES[contract.status as keyof typeof CONTRACT_STATUSES]}

@@ -16,9 +16,9 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
                 *,
                 tenant:tenants(id, full_name, phone),
                 contract:lease_contracts(
-                    id,
                     space:market_spaces(id, code)
-                )
+                ),
+                receipt_url
             `)
             .order('period_month', { ascending: false })
             .limit(Number(limit));
@@ -127,13 +127,14 @@ router.post('/', requireRole('owner', 'accountant'), async (req: AuthenticatedRe
 router.put('/:id', requireRole('owner', 'accountant'), async (req: AuthenticatedRequest, res: Response) => {
     try {
         const { id } = req.params;
-        const { paid_amount, status, paid_at } = req.body;
+        const { paid_amount, status, paid_at, receipt_url } = req.body;
 
         const updates: Record<string, unknown> = {};
 
         if (paid_amount !== undefined) updates.paid_amount = paid_amount;
         if (status !== undefined) updates.status = status;
         if (paid_at !== undefined) updates.paid_at = paid_at;
+        if (receipt_url !== undefined) updates.receipt_url = receipt_url;
 
         // Auto-set paid status if fully paid
         const { data: currentPayment } = await supabaseAdmin

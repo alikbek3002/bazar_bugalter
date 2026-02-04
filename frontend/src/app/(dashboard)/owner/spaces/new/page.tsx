@@ -12,7 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SPACE_TYPES, SPACE_STATUSES } from '@/lib/constants';
-import { createClient } from '@/lib/supabase/client';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function NewSpacePage() {
     const router = useRouter();
@@ -39,11 +40,14 @@ export default function NewSpacePage() {
 
         setIsLoading(true);
         try {
-            const supabase = createClient();
-
-            const { error } = await supabase
-                .from('market_spaces')
-                .insert({
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/spaces`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
                     code: formData.code,
                     sector: formData.sector || null,
                     row_number: formData.row_number || null,
@@ -52,13 +56,16 @@ export default function NewSpacePage() {
                     space_type: formData.space_type || null,
                     business_type: formData.business_type || null,
                     status: formData.status,
-                });
+                })
+            });
 
-            if (error) {
-                if (error.code === '23505') {
-                    toast.error('Ошибка', { description: 'Место с таким кодом уже существует' });
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                if (result.error?.includes('duplicate') || result.error?.includes('23505')) {
+                    toast.error('Место с таким кодом уже существует');
                 } else {
-                    toast.error('Ошибка', { description: error.message });
+                    toast.error(result.error || 'Ошибка создания');
                 }
                 return;
             }

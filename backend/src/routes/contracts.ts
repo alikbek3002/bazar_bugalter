@@ -13,7 +13,7 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
             .select(`
                 *,
                 tenant:tenants(id, full_name, phone),
-                space:market_spaces(id, code, type)
+                space:market_spaces(id, code, space_type)
             `)
             .order('created_at', { ascending: false });
 
@@ -124,6 +124,18 @@ router.put('/:id', requireRole('owner'), async (req: AuthenticatedRequest, res: 
         const { id } = req.params;
         const updates = req.body;
 
+        // Get current contract to find space_id
+        const { data: currentContract } = await supabaseAdmin
+            .from('lease_contracts')
+            .select('space_id, status')
+            .eq('id', id)
+            .single();
+
+        if (!currentContract) {
+            return res.status(404).json({ success: false, error: 'Contract not found' });
+        }
+
+        // Perform update
         const { data, error } = await supabaseAdmin
             .from('lease_contracts')
             .update(updates)
@@ -132,6 +144,23 @@ router.put('/:id', requireRole('owner'), async (req: AuthenticatedRequest, res: 
             .single();
 
         if (error) throw error;
+
+        // Sync Space Status if contract status changed
+        if (updates.status && updates.status !== currentContract.status) {
+            let newSpaceStatus = null;
+            if (updates.status === 'active') {
+                newSpaceStatus = 'occupied';
+            } else if (['expired', 'terminated'].includes(updates.status)) {
+                newSpaceStatus = 'vacant';
+            }
+
+            if (newSpaceStatus) {
+                await supabaseAdmin
+                    .from('market_spaces')
+                    .update({ status: newSpaceStatus })
+                    .eq('id', currentContract.space_id);
+            }
+        }
 
         return res.json({
             success: true,

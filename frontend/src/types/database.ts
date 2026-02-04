@@ -2,7 +2,7 @@ export type UserRole = 'owner' | 'accountant' | 'tenant';
 
 export type SpaceType = 'kiosk' | 'pavilion' | 'open_space' | 'container';
 
-export type SpaceStatus = 'occupied' | 'vacant' | 'maintenance';
+export type SpaceStatus = 'occupied' | 'vacant';
 
 export type ContractStatus = 'active' | 'expired' | 'terminated';
 

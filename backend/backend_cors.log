@@ -48,3 +48,55 @@ CORS Origin configured as: http://localhost:3000
 [2026-02-03T10:37:21.145Z] OPTIONS /api/payments?limit=100
 [2026-02-03T10:37:21.147Z] GET /api/payments?limit=100
 [2026-02-03T10:37:22.236Z] GET /api/payments?limit=100
+[2026-02-03T10:39:28.876Z] OPTIONS /api/payments?limit=100
+[2026-02-03T10:39:28.879Z] OPTIONS /api/payments?limit=100
+[2026-02-03T10:39:28.880Z] GET /api/payments?limit=100
+[2026-02-03T10:39:30.025Z] GET /api/payments?limit=100
+[2026-02-03T10:42:14.216Z] OPTIONS /api/stats/overview
+[2026-02-03T10:42:14.217Z] OPTIONS /api/stats/overview
+[2026-02-03T10:42:14.218Z] GET /api/stats/overview
+[2026-02-03T10:42:15.715Z] GET /api/stats/overview
+[2026-02-03T10:43:26.433Z] OPTIONS /api/tenants
+[2026-02-03T10:43:26.434Z] OPTIONS /api/tenants
+[2026-02-03T10:43:26.435Z] GET /api/tenants
+[2026-02-03T10:43:27.328Z] GET /api/tenants
+[2026-02-03T10:43:27.478Z] OPTIONS /api/spaces
+[2026-02-03T10:43:27.479Z] OPTIONS /api/spaces
+[2026-02-03T10:43:27.480Z] GET /api/spaces
+[2026-02-03T10:43:28.266Z] GET /api/spaces
+[2026-02-03T10:43:29.660Z] OPTIONS /api/contracts
+[2026-02-03T10:43:29.661Z] OPTIONS /api/contracts
+[2026-02-03T10:43:29.661Z] GET /api/contracts
+Get contracts error: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column market_spaces_1.type does not exist'
+}
+[2026-02-03T10:43:30.582Z] GET /api/contracts
+Get contracts error: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column market_spaces_1.type does not exist'
+}
+[2026-02-03T10:48:00.911Z] OPTIONS /api/tenants
+[2026-02-03T10:48:00.913Z] OPTIONS /api/tenants
+[2026-02-03T10:48:00.913Z] GET /api/tenants
+[2026-02-03T10:48:01.650Z] OPTIONS /api/contracts
+[2026-02-03T10:48:01.651Z] OPTIONS /api/contracts
+[2026-02-03T10:48:01.652Z] GET /api/contracts
+Get contracts error: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column market_spaces_1.type does not exist'
+}
+[2026-02-03T10:48:02.997Z] GET /api/tenants
+[2026-02-03T10:48:02.999Z] GET /api/contracts
+Get contracts error: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column market_spaces_1.type does not exist'
+}

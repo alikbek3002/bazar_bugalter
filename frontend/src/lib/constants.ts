@@ -10,7 +10,6 @@ export const SPACE_TYPES = {
 export const SPACE_STATUSES = {
     occupied: 'Занято',
     vacant: 'Свободно',
-    maintenance: 'На обслуживании',
 } as const;
 
 export const CONTRACT_STATUSES = {
@@ -48,7 +47,6 @@ export const STATUS_COLORS = {
     // Space statuses
     occupied: 'bg-red-100 text-red-800',
     vacant: 'bg-green-100 text-green-800',
-    maintenance: 'bg-yellow-100 text-yellow-800',
     // Payment statuses
     pending: 'bg-yellow-100 text-yellow-800',
     paid: 'bg-green-100 text-green-800',
