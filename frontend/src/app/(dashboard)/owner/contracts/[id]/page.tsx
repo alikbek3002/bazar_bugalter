@@ -34,7 +34,7 @@ interface Contract {
     space: {
         id: string;
         code: string;
-        type: string;
+        space_type: string;
         area_sqm: number;
     };
     payments: any[];
@@ -379,7 +379,7 @@ export default function ContractDetailsPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold mb-1">{contract.space.code}</div>
-                                <div className="text-sm text-muted-foreground">{contract.space.area_sqm} м², {contract.space.type}</div>
+                                <div className="text-sm text-muted-foreground">{contract.space.area_sqm} м², {contract.space.space_type}</div>
                                 <Link href={`/owner/spaces/${contract.space.id}`}>
                                     <Button variant="link" className="p-0 h-auto mt-2">Перейти к месту</Button>
                                 </Link>

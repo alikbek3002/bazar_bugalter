@@ -11,8 +11,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FileUpload } from '@/components/ui/FileUpload';
 import { createClient } from '@/lib/supabase/client';
 import type { Tenant, MarketSpace } from '@/types/database';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function NewContractPage() {
     const router = useRouter();
@@ -29,6 +32,7 @@ export default function NewContractPage() {
         monthly_rent: '',
         deposit_amount: '',
         payment_day: '5',
+        contract_file_url: '',
     });
 
     useEffect(() => {
@@ -65,6 +69,11 @@ export default function NewContractPage() {
             return;
         }
 
+        if (!formData.contract_file_url) {
+            toast.error('Прикрепите файл договора');
+            return;
+        }
+
         setIsLoading(true);
         try {
             const supabase = createClient();
@@ -80,6 +89,7 @@ export default function NewContractPage() {
                     monthly_rent: parseFloat(formData.monthly_rent),
                     deposit_amount: formData.deposit_amount ? parseFloat(formData.deposit_amount) : null,
                     payment_day: formData.payment_day ? parseInt(formData.payment_day) : null,
+                    contract_file_url: formData.contract_file_url,
                     status: 'active',
                 });
 
@@ -230,6 +240,33 @@ export default function NewContractPage() {
                                 onChange={(e) => setFormData(prev => ({ ...prev, payment_day: e.target.value }))}
                             />
                             <p className="text-xs text-muted-foreground">День месяца для ежемесячного платежа</p>
+                        </div>
+
+                        {/* Contract File Upload */}
+                        <div className="space-y-2">
+                            <Label>Файл договора *</Label>
+                            <FileUpload
+                                type="document"
+                                onUpload={(url: string) => setFormData(prev => ({ ...prev, contract_file_url: url }))}
+                                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                maxSize={10}
+                            />
+                            {formData.contract_file_url && (
+                                <div className="flex items-center gap-2 text-sm text-green-600">
+                                    <span>✓ Файл загружен</span>
+                                    <a
+                                        href={formData.contract_file_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="underline"
+                                    >
+                                        Просмотреть
+                                    </a>
+                                </div>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                                Прикрепите скан или фото подписанного договора (PDF, DOC, DOCX, JPG, PNG)
+                            </p>
                         </div>
 
                         <div className="flex gap-4">

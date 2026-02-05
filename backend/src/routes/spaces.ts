@@ -58,18 +58,18 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response) => {
             .eq('status', 'active')
             .single();
 
-        // Get payment history for this space (via contracts)
-        let payments: unknown[] = [];
-        if (contract) {
-            const { data: paymentData } = await supabaseAdmin
-                .from('payments')
-                .select('*')
-                .eq('contract_id', contract.id)
-                .order('period_month', { ascending: false })
-                .limit(24);
+        // Get payment history for this space (by space_id directly)
+        const { data: paymentData } = await supabaseAdmin
+            .from('payments')
+            .select(`
+                *,
+                tenant:tenants(id, full_name, phone)
+            `)
+            .eq('space_id', id)
+            .order('created_at', { ascending: false })
+            .limit(50);
 
-            payments = paymentData || [];
-        }
+        const payments = paymentData || [];
 
         return res.json({
             success: true,

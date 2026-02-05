@@ -18,9 +18,10 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
                 contract:lease_contracts(
                     space:market_spaces(id, code)
                 ),
+                space:market_spaces(id, code, space_type),
                 receipt_url
             `)
-            .order('period_month', { ascending: false })
+            .order('created_at', { ascending: false })
             .limit(Number(limit));
 
         if (status) {
@@ -82,30 +83,97 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response) => {
     }
 });
 
+// GET /api/payments/by-space/:spaceId - Get payments for a specific space
+router.get('/by-space/:spaceId', async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const { spaceId } = req.params;
+
+        const { data, error } = await supabaseAdmin
+            .from('payments')
+            .select(`
+                *,
+                tenant:tenants(id, full_name, phone)
+            `)
+            .eq('space_id', spaceId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        return res.json({
+            success: true,
+            data: data || []
+        });
+    } catch (error) {
+        console.error('Get payments by space error:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Ошибка загрузки истории платежей'
+        });
+    }
+});
+
 // POST /api/payments - Create new payment
 router.post('/', requireRole('owner', 'accountant'), async (req: AuthenticatedRequest, res: Response) => {
     try {
-        const { tenant_id, contract_id, period_month, charged_amount, paid_amount, status, due_date } = req.body;
+        const {
+            space_id,
+            paid_amount,
+            period_start,
+            period_end,
+            payment_method,
+            notes
+        } = req.body;
 
-        if (!tenant_id || !contract_id || !period_month || !charged_amount) {
+        // Validate required fields
+        if (!space_id || !paid_amount || !period_start || !period_end) {
             return res.status(400).json({
                 success: false,
-                error: 'Required fields: tenant_id, contract_id, period_month, charged_amount'
+                error: 'Обязательные поля: space_id, paid_amount, period_start, period_end'
             });
         }
+
+        // Find active contract for this space
+        const { data: activeContract, error: contractError } = await supabaseAdmin
+            .from('lease_contracts')
+            .select('id, tenant_id, monthly_rent')
+            .eq('space_id', space_id)
+            .eq('status', 'active')
+            .single();
+
+        if (contractError || !activeContract) {
+            return res.status(400).json({
+                success: false,
+                error: 'Нельзя добавить платёж: место свободно или нет активного договора'
+            });
+        }
+
+        // Calculate charged_amount based on period (monthly_rent * months)
+        const start = new Date(period_start);
+        const end = new Date(period_end);
+        const months = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (30 * 24 * 60 * 60 * 1000)));
+        const charged_amount = activeContract.monthly_rent * months;
 
         const { data, error } = await supabaseAdmin
             .from('payments')
             .insert({
-                tenant_id,
-                contract_id,
-                period_month,
+                contract_id: activeContract.id,
+                tenant_id: activeContract.tenant_id,
+                space_id,
+                period_month: period_start, // For backward compatibility
+                period_start,
+                period_end,
                 charged_amount,
-                paid_amount: paid_amount || 0,
-                status: status || 'pending',
-                due_date
+                paid_amount: parseFloat(paid_amount),
+                status: parseFloat(paid_amount) >= charged_amount ? 'paid' : 'partial',
+                paid_at: new Date().toISOString(),
+                payment_method: payment_method || null,
+                notes: notes || null
             })
-            .select()
+            .select(`
+                *,
+                tenant:tenants(id, full_name),
+                space:market_spaces(id, code)
+            `)
             .single();
 
         if (error) throw error;
@@ -118,7 +186,7 @@ router.post('/', requireRole('owner', 'accountant'), async (req: AuthenticatedRe
         console.error('Create payment error:', error);
         return res.status(500).json({
             success: false,
-            error: 'Failed to create payment'
+            error: 'Ошибка создания платежа'
         });
     }
 });

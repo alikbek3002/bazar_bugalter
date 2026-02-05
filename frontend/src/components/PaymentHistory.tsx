@@ -8,11 +8,19 @@ import { Calendar, Receipt } from 'lucide-react';
 interface Payment {
     id: string;
     period_month: string;
+    period_start?: string;
+    period_end?: string;
     charged_amount: number;
     paid_amount: number;
     status: string;
     payment_date?: string;
     due_date?: string;
+    created_at?: string;
+    tenant?: {
+        id: string;
+        full_name: string;
+        phone: string;
+    };
 }
 
 interface PaymentHistoryProps {
@@ -66,22 +74,29 @@ export function PaymentHistory({ payments, title = 'История платеж�
             <CardContent>
                 <div className="space-y-2">
                     {/* Header */}
-                    <div className="grid grid-cols-5 gap-4 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-medium">
+                    <div className="grid grid-cols-6 gap-4 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-medium">
+                        <div>Арендатор</div>
                         <div>Период</div>
                         <div>Начислено</div>
                         <div>Оплачено</div>
                         <div>Статус</div>
-                        <div>Дата оплаты</div>
+                        <div>Дата</div>
                     </div>
 
                     {/* Rows */}
                     {payments.map((payment) => (
                         <div
                             key={payment.id}
-                            className="grid grid-cols-5 gap-4 px-4 py-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                            className="grid grid-cols-6 gap-4 px-4 py-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                         >
-                            <div className="font-medium">
-                                {formatDate(payment.period_month)}
+                            <div className="font-medium truncate">
+                                {payment.tenant?.full_name || '—'}
+                            </div>
+                            <div className="text-muted-foreground text-sm">
+                                {payment.period_start && payment.period_end
+                                    ? `${new Date(payment.period_start).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })} — ${new Date(payment.period_end).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: '2-digit' })}`
+                                    : formatDate(payment.period_month)
+                                }
                             </div>
                             <div className="text-muted-foreground">
                                 {formatCurrency(payment.charged_amount)}
@@ -95,8 +110,8 @@ export function PaymentHistory({ payments, title = 'История платеж�
                                 </Badge>
                             </div>
                             <div className="text-muted-foreground text-sm">
-                                {payment.payment_date
-                                    ? new Date(payment.payment_date).toLocaleDateString('ru-RU')
+                                {payment.created_at
+                                    ? new Date(payment.created_at).toLocaleDateString('ru-RU')
                                     : '—'
                                 }
                             </div>

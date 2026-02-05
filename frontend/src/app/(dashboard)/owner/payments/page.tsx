@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, AlertTriangle, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { CreditCard, AlertTriangle, CheckCircle, Clock, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { PAYMENT_STATUSES, STATUS_COLORS } from '@/lib/constants';
 
@@ -81,9 +83,17 @@ export default function OwnerPaymentsPage() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold">Платежи</h1>
-                <p className="text-muted-foreground">Обзор всех платежей по аренде</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold">Платежи</h1>
+                    <p className="text-muted-foreground">Обзор всех платежей по аренде</p>
+                </div>
+                <Link href="/owner/payments/new">
+                    <Button>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Добавить платёж
+                    </Button>
+                </Link>
             </div>
 
             {/* Stats */}

@@ -33,7 +33,7 @@ interface Tenant {
         end_date?: string;
         space: {
             code: string;
-            type: string;
+            space_type: string;
         };
     }[];
 }
@@ -274,7 +274,7 @@ export default function TenantDetailsPage() {
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <div className="font-bold text-lg">{contract.space?.code || 'Место удалено'}</div>
-                                                    <div className="text-sm text-muted-foreground">{contract.space?.type}</div>
+                                                    <div className="text-sm text-muted-foreground">{contract.space?.space_type}</div>
                                                 </div>
                                                 <Badge className={STATUS_COLORS[contract.status as keyof typeof STATUS_COLORS]}>
                                                     {CONTRACT_STATUSES[contract.status as keyof typeof CONTRACT_STATUSES]}
