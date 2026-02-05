@@ -17,6 +17,10 @@ interface Payment {
     charged_amount: number;
     paid_amount: number;
     status: string;
+    marked_at?: string;
+    marked_by_profile?: {
+        full_name: string;
+    };
     tenant?: {
         full_name: string;
         phone: string;
@@ -166,19 +170,20 @@ export default function OwnerPaymentsPage() {
                     ) : (
                         <div className="space-y-2">
                             {/* Table Header */}
-                            <div className="grid grid-cols-6 gap-4 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg font-medium text-sm">
+                            <div className="grid grid-cols-7 gap-4 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg font-medium text-sm">
                                 <div>Арендатор</div>
                                 <div>Место</div>
                                 <div>Период</div>
                                 <div>Сумма</div>
                                 <div>Оплачено</div>
                                 <div>Статус</div>
+                                <div>Обработал</div>
                             </div>
                             {/* Table Body */}
                             {payments.map((payment) => (
                                 <div
                                     key={payment.id}
-                                    className="grid grid-cols-6 gap-4 px-4 py-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                                    className="grid grid-cols-7 gap-4 px-4 py-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                                 >
                                     <div className="font-medium">{payment.tenant?.full_name || 'Не указан'}</div>
                                     <div className="text-muted-foreground">{payment.contract?.space?.code || '—'}</div>
@@ -193,6 +198,20 @@ export default function OwnerPaymentsPage() {
                                         <Badge className={STATUS_COLORS[payment.status as keyof typeof STATUS_COLORS]}>
                                             {PAYMENT_STATUSES[payment.status as keyof typeof PAYMENT_STATUSES]}
                                         </Badge>
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                        {payment.marked_by_profile?.full_name ? (
+                                            <div>
+                                                <span className="font-medium text-foreground">{payment.marked_by_profile.full_name}</span>
+                                                {payment.marked_at && (
+                                                    <div className="text-xs">
+                                                        {new Date(payment.marked_at).toLocaleDateString('ru-RU')}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            '—'
+                                        )}
                                     </div>
                                 </div>
                             ))}

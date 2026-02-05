@@ -52,6 +52,8 @@ const ownerMenuItems = [
 ];
 
 const accountantMenuItems = [
+    { title: 'Торговые места', href: '/accountant/spaces', icon: MapPin },
+    { title: 'Арендаторы', href: '/accountant/tenants', icon: Users },
     { title: 'Платежи', href: '/accountant/payments', icon: CreditCard },
     { title: 'Отчёты', href: '/accountant/reports', icon: BarChart3 },
 ];
