@@ -1,20 +1,11 @@
-# Railway Configuration for Bazar Bugalter Backend
+# Railway Configuration for Backend
+# Root Directory should be set to "backend" in Railway dashboard
 
 [build]
 builder = "nixpacks"
-watchPatterns = ["backend/**"]
-
-[build.nixpacksPlan.phases.setup]
-nixPkgs = ["nodejs_20"]
-
-[build.nixpacksPlan.phases.install]
-cmds = ["cd backend && npm install"]
-
-[build.nixpacksPlan.phases.build]
-cmds = ["cd backend && npm run build"]
 
 [deploy]
-startCommand = "cd backend && npm start"
+startCommand = "npm start"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
