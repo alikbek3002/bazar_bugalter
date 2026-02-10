@@ -28,9 +28,7 @@ export default function NewContractPage() {
         space_id: '',
         start_date: new Date().toISOString().split('T')[0],
         end_date: '',
-        rate_per_sqm: '',
         monthly_rent: '',
-        deposit_amount: '',
         payment_day: '5',
         contract_file_url: '',
     });
@@ -50,21 +48,12 @@ export default function NewContractPage() {
         loadData();
     }, []);
 
-    // Auto-calculate monthly rent when space or rate changes
-    useEffect(() => {
-        if (formData.space_id && formData.rate_per_sqm) {
-            const space = spaces.find(s => s.id === formData.space_id);
-            if (space?.area_sqm) {
-                const rent = space.area_sqm * parseFloat(formData.rate_per_sqm);
-                setFormData(prev => ({ ...prev, monthly_rent: Math.round(rent).toString() }));
-            }
-        }
-    }, [formData.space_id, formData.rate_per_sqm, spaces]);
+
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
 
-        if (!formData.tenant_id || !formData.space_id || !formData.start_date || !formData.rate_per_sqm || !formData.monthly_rent) {
+        if (!formData.tenant_id || !formData.space_id || !formData.start_date || !formData.monthly_rent) {
             toast.error('Заполните все обязательные поля');
             return;
         }
@@ -85,9 +74,7 @@ export default function NewContractPage() {
                     space_id: formData.space_id,
                     start_date: formData.start_date,
                     end_date: formData.end_date || null,
-                    rate_per_sqm: parseFloat(formData.rate_per_sqm),
                     monthly_rent: parseFloat(formData.monthly_rent),
-                    deposit_amount: formData.deposit_amount ? parseFloat(formData.deposit_amount) : null,
                     payment_day: formData.payment_day ? parseInt(formData.payment_day) : null,
                     contract_file_url: formData.contract_file_url,
                     status: 'active',
@@ -198,35 +185,14 @@ export default function NewContractPage() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="rate">Ставка за м² *</Label>
-                                <Input
-                                    type="number"
-                                    placeholder="5000"
-                                    value={formData.rate_per_sqm}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, rate_per_sqm: e.target.value }))}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="rent">Аренда в месяц *</Label>
-                                <Input
-                                    type="number"
-                                    placeholder="75000"
-                                    value={formData.monthly_rent}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, monthly_rent: e.target.value }))}
-                                />
-                                <p className="text-xs text-muted-foreground">Авто = площадь × ставка</p>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="deposit">Депозит</Label>
-                                <Input
-                                    type="number"
-                                    placeholder="75000"
-                                    value={formData.deposit_amount}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, deposit_amount: e.target.value }))}
-                                />
-                            </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="rent">Аренда в месяц *</Label>
+                            <Input
+                                type="number"
+                                placeholder="75000"
+                                value={formData.monthly_rent}
+                                onChange={(e) => setFormData(prev => ({ ...prev, monthly_rent: e.target.value }))}
+                            />
                         </div>
 
                         <div className="space-y-2">
