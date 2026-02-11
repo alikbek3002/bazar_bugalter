@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, Save, Phone, Mail, MapPin, Building2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Phone, MapPin, Building2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,6 @@ interface Tenant {
     id: string;
     full_name: string;
     phone: string;
-    email?: string;
     inn_idn?: string;
     company_name?: string;
     address?: string;
@@ -44,12 +43,13 @@ export default function TenantDetailsPage() {
     const [tenant, setTenant] = useState<Tenant | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     // Form state
     const [formData, setFormData] = useState({
         full_name: '',
         phone: '',
-        email: '',
         company_name: '',
         inn_idn: '',
         address: '',
@@ -82,9 +82,8 @@ export default function TenantDetailsPage() {
                 setFormData({
                     full_name: data.full_name || '',
                     phone: data.phone || '',
-                    email: data.email || '',
                     company_name: data.company_name || '',
-                    inn_idn: data.inn_idn || '', // DB field name
+                    inn_idn: data.inn_idn || '',
                     address: data.address || '',
                     notes: data.notes || ''
                 });
@@ -127,6 +126,31 @@ export default function TenantDetailsPage() {
         }
     };
 
+    const handleDelete = async () => {
+        setIsDeleting(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/tenants/${params.id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error);
+
+            toast.success('Арендатор удалён, место освобождено');
+            router.push('/owner/tenants');
+        } catch (error) {
+            console.error('Delete error:', error);
+            toast.error('Ошибка удаления арендатора');
+        } finally {
+            setIsDeleting(false);
+            setShowDeleteConfirm(false);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="flex h-96 items-center justify-center">
@@ -148,19 +172,68 @@ export default function TenantDetailsPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-4">
-                <Link href="/owner/tenants">
-                    <Button variant="ghost" size="icon">
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                </Link>
-                <div>
-                    <h1 className="text-3xl font-bold">{tenant.full_name}</h1>
-                    <p className="text-muted-foreground">
-                        {tenant.company_name || 'Частное лицо'} • {tenant.phone}
-                    </p>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <Link href="/owner/tenants">
+                        <Button variant="ghost" size="icon">
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                    </Link>
+                    <div>
+                        <h1 className="text-3xl font-bold">{tenant.full_name}</h1>
+                        <p className="text-muted-foreground">
+                            {tenant.company_name || 'Частное лицо'} • {tenant.phone}
+                        </p>
+                    </div>
                 </div>
+                <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowDeleteConfirm(true)}
+                >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Удалить арендатора
+                </Button>
             </div>
+
+            {/* Delete confirmation dialog */}
+            {showDeleteConfirm && (
+                <Card className="border-red-300 bg-red-50 dark:bg-red-900/20 max-w-2xl">
+                    <CardContent className="pt-6">
+                        <p className="font-medium text-red-700 dark:text-red-400 mb-2">
+                            Вы уверены, что хотите удалить арендатора «{tenant.full_name}»?
+                        </p>
+                        <p className="text-sm text-red-600 dark:text-red-400 mb-4">
+                            Все договоры будут удалены, а занятые места станут свободными.
+                        </p>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={handleDelete}
+                                disabled={isDeleting}
+                            >
+                                {isDeleting ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Удаление...
+                                    </>
+                                ) : (
+                                    'Да, удалить'
+                                )}
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowDeleteConfirm(false)}
+                                disabled={isDeleting}
+                            >
+                                Отмена
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-6">
@@ -193,21 +266,6 @@ export default function TenantDetailsPage() {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="email">Email</Label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            id="email"
-                                            className="pl-9"
-                                            value={formData.email}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
                                     <Label htmlFor="company">Компания</Label>
                                     <div className="relative">
                                         <Building2 className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -219,6 +277,9 @@ export default function TenantDetailsPage() {
                                         />
                                     </div>
                                 </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="inn">ИНН</Label>
                                     <Input
@@ -227,18 +288,17 @@ export default function TenantDetailsPage() {
                                         onChange={(e) => setFormData(prev => ({ ...prev, inn_idn: e.target.value }))}
                                     />
                                 </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="address">Адрес</Label>
-                                <div className="relative">
-                                    <MapPin className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        id="address"
-                                        className="pl-9"
-                                        value={formData.address}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                                    />
+                                <div className="space-y-2">
+                                    <Label htmlFor="address">Адрес</Label>
+                                    <div className="relative">
+                                        <MapPin className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            id="address"
+                                            className="pl-9"
+                                            value={formData.address}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
@@ -295,21 +355,12 @@ export default function TenantDetailsPage() {
                                                 <span className="text-muted-foreground">Аренда:</span>
                                                 <span className="font-medium">{contract.monthly_rent?.toLocaleString('ru-RU')} с</span>
                                             </div>
-
-                                            <Link href={`/owner/contracts/${contract.id}`} className="mt-2 text-sm text-blue-500 hover:underline">
-                                                Перейти к договору →
-                                            </Link>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
                                 <div className="text-center text-muted-foreground py-10">
                                     У арендатора нет договоров
-                                    <div className="mt-4">
-                                        <Link href="/owner/contracts/new">
-                                            <Button variant="outline" size="sm">Создать договор</Button>
-                                        </Link>
-                                    </div>
                                 </div>
                             )}
                         </CardContent>

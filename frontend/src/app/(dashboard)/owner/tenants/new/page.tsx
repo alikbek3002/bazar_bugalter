@@ -34,7 +34,6 @@ export default function NewTenantPage() {
         phone: '',
         company_name: '',
         inn: '',
-        email: '',
         whatsapp: '',
         telegram: '',
         notes: '',
@@ -132,7 +131,6 @@ export default function NewTenantPage() {
                     // Tenant
                     full_name: tenantData.full_name,
                     phone: tenantData.phone,
-                    email: tenantData.email || null,
                     inn: tenantData.inn || null,
                     company_name: tenantData.company_name || null,
                     whatsapp: tenantData.whatsapp || null,
@@ -212,26 +210,14 @@ export default function NewTenantPage() {
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="phone">Телефон *</Label>
-                                <Input
-                                    id="phone"
-                                    placeholder="+996 777 123 456"
-                                    value={tenantData.phone}
-                                    onChange={(e) => setTenantData(prev => ({ ...prev, phone: e.target.value }))}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    placeholder="email@example.com"
-                                    value={tenantData.email}
-                                    onChange={(e) => setTenantData(prev => ({ ...prev, email: e.target.value }))}
-                                />
-                            </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="phone">Телефон *</Label>
+                            <Input
+                                id="phone"
+                                placeholder="+996 777 123 456"
+                                value={tenantData.phone}
+                                onChange={(e) => setTenantData(prev => ({ ...prev, phone: e.target.value }))}
+                            />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">

@@ -46,7 +46,6 @@ const ownerMenuItems = [
     { title: 'Обзор', href: '/owner/overview', icon: LayoutDashboard },
     { title: 'Торговые места', href: '/owner/spaces', icon: MapPin },
     { title: 'Арендаторы', href: '/owner/tenants', icon: Users },
-    { title: 'Договоры', href: '/owner/contracts', icon: FileText },
     { title: 'Платежи', href: '/owner/payments', icon: CreditCard },
     { title: 'Отчёты', href: '/owner/reports', icon: BarChart3 },
 ];

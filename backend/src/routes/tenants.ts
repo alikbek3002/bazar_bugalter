@@ -75,7 +75,6 @@ router.post('/', requireRole('owner', 'accountant'), async (req: AuthenticatedRe
             // Tenant data
             full_name,
             phone,
-            email,
             inn,
             company_name,
             whatsapp,
@@ -134,7 +133,6 @@ router.post('/', requireRole('owner', 'accountant'), async (req: AuthenticatedRe
             .insert({
                 full_name,
                 phone,
-                email,
                 inn_idn: inn,
                 company_name,
                 whatsapp,
@@ -237,6 +235,40 @@ router.delete('/:id', requireRole('owner'), async (req: AuthenticatedRequest, re
     try {
         const { id } = req.params;
 
+        // Step 1: Get all active contracts for this tenant to find occupied spaces
+        const { data: contracts, error: contractsError } = await supabaseAdmin
+            .from('lease_contracts')
+            .select('id, space_id, status')
+            .eq('tenant_id', id);
+
+        if (contractsError) throw contractsError;
+
+        // Step 2: Collect space_ids from active contracts and free them
+        if (contracts && contracts.length > 0) {
+            const activeSpaceIds = contracts
+                .filter(c => c.status === 'active')
+                .map(c => c.space_id)
+                .filter(Boolean);
+
+            if (activeSpaceIds.length > 0) {
+                const { error: spaceError } = await supabaseAdmin
+                    .from('market_spaces')
+                    .update({ status: 'vacant' })
+                    .in('id', activeSpaceIds);
+
+                if (spaceError) throw spaceError;
+            }
+
+            // Step 3: Delete all contracts for this tenant
+            const { error: deleteContractsError } = await supabaseAdmin
+                .from('lease_contracts')
+                .delete()
+                .eq('tenant_id', id);
+
+            if (deleteContractsError) throw deleteContractsError;
+        }
+
+        // Step 4: Delete the tenant
         const { error } = await supabaseAdmin
             .from('tenants')
             .delete()
