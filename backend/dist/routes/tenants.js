@@ -68,7 +68,7 @@ router.post('/', (0, auth_js_1.requireRole)('owner', 'accountant'), async (req, 
     try {
         const { 
         // Tenant data
-        full_name, phone, email, inn, company_name, whatsapp, telegram, notes, 
+        full_name, phone, inn, company_name, whatsapp, telegram, notes, 
         // Contract data
         space_id, start_date, end_date, monthly_rent, payment_day, deposit, contract_file_url } = req.body;
         // Validate required fields
@@ -109,7 +109,6 @@ router.post('/', (0, auth_js_1.requireRole)('owner', 'accountant'), async (req, 
             .insert({
             full_name,
             phone,
-            email,
             inn_idn: inn,
             company_name,
             whatsapp,
@@ -204,6 +203,36 @@ router.put('/:id', (0, auth_js_1.requireRole)('owner', 'accountant'), async (req
 router.delete('/:id', (0, auth_js_1.requireRole)('owner'), async (req, res) => {
     try {
         const { id } = req.params;
+        // Step 1: Get all active contracts for this tenant to find occupied spaces
+        const { data: contracts, error: contractsError } = await supabase_js_1.supabaseAdmin
+            .from('lease_contracts')
+            .select('id, space_id, status')
+            .eq('tenant_id', id);
+        if (contractsError)
+            throw contractsError;
+        // Step 2: Collect space_ids from active contracts and free them
+        if (contracts && contracts.length > 0) {
+            const activeSpaceIds = contracts
+                .filter(c => c.status === 'active')
+                .map(c => c.space_id)
+                .filter(Boolean);
+            if (activeSpaceIds.length > 0) {
+                const { error: spaceError } = await supabase_js_1.supabaseAdmin
+                    .from('market_spaces')
+                    .update({ status: 'vacant' })
+                    .in('id', activeSpaceIds);
+                if (spaceError)
+                    throw spaceError;
+            }
+            // Step 3: Delete all contracts for this tenant
+            const { error: deleteContractsError } = await supabase_js_1.supabaseAdmin
+                .from('lease_contracts')
+                .delete()
+                .eq('tenant_id', id);
+            if (deleteContractsError)
+                throw deleteContractsError;
+        }
+        // Step 4: Delete the tenant
         const { error } = await supabase_js_1.supabaseAdmin
             .from('tenants')
             .delete()

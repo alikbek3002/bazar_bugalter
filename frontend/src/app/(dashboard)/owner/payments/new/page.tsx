@@ -71,9 +71,9 @@ export default function NewPaymentPage() {
                 const spacesWithContracts: OccupiedSpace[] = [];
 
                 for (const space of result.data || []) {
-                    if (space.status === 'occupied' && space.contracts?.length > 0) {
+                    if (space.contracts?.length > 0) {
                         const activeContract = space.contracts.find((c: any) => c.status === 'active');
-                        if (activeContract) {
+                        if (activeContract && activeContract.tenant) {
                             spacesWithContracts.push({
                                 id: space.id,
                                 code: space.code,

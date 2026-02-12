@@ -7,10 +7,21 @@ const router = (0, express_1.Router)();
 // GET /api/spaces - Get all spaces
 router.get('/', async (req, res) => {
     try {
-        const { data, error } = await supabase_js_1.supabaseAdmin
+        const { status } = req.query;
+        let query = supabase_js_1.supabaseAdmin
             .from('market_spaces')
-            .select('*')
+            .select(`
+                *,
+                contracts:lease_contracts(
+                    id, status, monthly_rent, start_date, end_date,
+                    tenant:tenants(id, full_name, phone, company_name)
+                )
+            `)
             .order('code', { ascending: true });
+        if (status) {
+            query = query.eq('status', status);
+        }
+        const { data, error } = await query;
         if (error)
             throw error;
         return res.json({

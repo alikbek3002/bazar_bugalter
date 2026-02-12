@@ -8,10 +8,24 @@ const router = Router();
 // GET /api/spaces - Get all spaces
 router.get('/', async (req: AuthenticatedRequest, res: Response) => {
     try {
-        const { data, error } = await supabaseAdmin
+        const { status } = req.query;
+
+        let query = supabaseAdmin
             .from('market_spaces')
-            .select('*')
+            .select(`
+                *,
+                contracts:lease_contracts(
+                    id, status, monthly_rent, start_date, end_date,
+                    tenant:tenants(id, full_name, phone, company_name)
+                )
+            `)
             .order('code', { ascending: true });
+
+        if (status) {
+            query = query.eq('status', status);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
