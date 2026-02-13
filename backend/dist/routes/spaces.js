@@ -150,15 +150,40 @@ router.post('/', (0, auth_js_1.requireRole)('owner'), async (req, res) => {
 router.put('/:id', (0, auth_js_1.requireRole)('owner'), async (req, res) => {
     try {
         const { id } = req.params;
-        const updates = req.body;
+        const { code, sector, space_type, area_sqm, base_rent, status, description } = req.body;
+        // Build update object with only valid fields
+        const updates = {};
+        if (code !== undefined)
+            updates.code = code;
+        if (sector !== undefined)
+            updates.sector = sector || null;
+        if (space_type !== undefined)
+            updates.space_type = space_type || null;
+        if (area_sqm !== undefined)
+            updates.area_sqm = area_sqm !== null && area_sqm !== '' ? parseFloat(String(area_sqm)) : null;
+        if (base_rent !== undefined)
+            updates.base_rent = base_rent !== null && base_rent !== '' ? parseFloat(String(base_rent)) : null;
+        if (status !== undefined)
+            updates.status = status;
+        if (description !== undefined)
+            updates.description = description || null;
+        console.log('Updating space:', id, 'with:', updates);
         const { data, error } = await supabase_js_1.supabaseAdmin
             .from('market_spaces')
             .update(updates)
             .eq('id', id)
             .select()
             .single();
-        if (error)
+        if (error) {
+            console.error('Supabase update error:', error);
+            if (error.code === '23505') {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Место с таким кодом уже существует'
+                });
+            }
             throw error;
+        }
         return res.json({
             success: true,
             data
