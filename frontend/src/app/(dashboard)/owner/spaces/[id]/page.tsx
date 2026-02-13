@@ -145,13 +145,13 @@ export default function SpaceDetailsPage() {
             });
 
             const result = await response.json();
-            if (!response.ok) throw new Error(result.error);
+            if (!response.ok) throw new Error(result.error || 'Failed to update space');
 
             toast.success('Торговое место обновлено');
             fetchSpace();
         } catch (error) {
             console.error('Update error:', error);
-            toast.error('Ошибка обновления');
+            toast.error(error instanceof Error ? error.message : 'Ошибка обновления');
         } finally {
             setIsSaving(false);
         }
