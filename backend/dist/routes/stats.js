@@ -7,16 +7,18 @@ const router = (0, express_1.Router)();
 router.get('/overview', async (req, res) => {
     try {
         // Fetch all data in parallel
-        const [spacesResult, tenantsResult, contractsResult, paymentsResult] = await Promise.all([
+        const [spacesResult, tenantsResult, contractsResult, paymentsResult, expensesResult] = await Promise.all([
             supabase_js_1.supabaseAdmin.from('market_spaces').select('id, status'),
             supabase_js_1.supabaseAdmin.from('tenants').select('id'),
             supabase_js_1.supabaseAdmin.from('lease_contracts').select('id, status'),
             supabase_js_1.supabaseAdmin.from('payments').select('id, status, charged_amount, paid_amount'),
+            supabase_js_1.supabaseAdmin.from('expenses').select('id, amount'),
         ]);
         const spaces = spacesResult.data || [];
         const tenants = tenantsResult.data || [];
         const contracts = contractsResult.data || [];
         const payments = paymentsResult.data || [];
+        const expenses = expensesResult.data || [];
         // Calculate metrics
         const totalSpaces = spaces.length;
         const occupiedSpaces = spaces.filter(s => s.status === 'occupied').length;
@@ -31,6 +33,8 @@ router.get('/overview', async (req, res) => {
         const totalRevenue = paidPayments.reduce((sum, p) => sum + p.paid_amount, 0);
         const totalPending = pendingPayments.reduce((sum, p) => sum + (p.charged_amount - p.paid_amount), 0);
         const totalOverdue = overduePayments.reduce((sum, p) => sum + (p.charged_amount - p.paid_amount), 0);
+        const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+        const netIncome = Math.max(0, totalRevenue - totalExpenses);
         return res.json({
             success: true,
             data: {
@@ -58,7 +62,11 @@ router.get('/overview', async (req, res) => {
                     total: totalRevenue,
                     pending: totalPending,
                     overdue: totalOverdue
-                }
+                },
+                expenses: {
+                    total: totalExpenses
+                },
+                netIncome
             }
         });
     }

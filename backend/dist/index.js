@@ -14,6 +14,7 @@ const contracts_js_1 = __importDefault(require("./routes/contracts.js"));
 const payments_js_1 = __importDefault(require("./routes/payments.js"));
 const stats_js_1 = __importDefault(require("./routes/stats.js"));
 const upload_js_1 = __importDefault(require("./routes/upload.js"));
+const expenses_js_1 = __importDefault(require("./routes/expenses.js"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
@@ -46,6 +47,7 @@ app.use('/api/contracts', auth_js_1.authMiddleware, contracts_js_1.default);
 app.use('/api/payments', auth_js_1.authMiddleware, payments_js_1.default);
 app.use('/api/stats', auth_js_1.authMiddleware, stats_js_1.default);
 app.use('/api/upload', auth_js_1.authMiddleware, upload_js_1.default);
+app.use('/api/expenses', auth_js_1.authMiddleware, expenses_js_1.default);
 // Error handling
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
