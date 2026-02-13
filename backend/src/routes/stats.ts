@@ -8,17 +8,19 @@ const router = Router();
 router.get('/overview', async (req: AuthenticatedRequest, res: Response) => {
     try {
         // Fetch all data in parallel
-        const [spacesResult, tenantsResult, contractsResult, paymentsResult] = await Promise.all([
+        const [spacesResult, tenantsResult, contractsResult, paymentsResult, expensesResult] = await Promise.all([
             supabaseAdmin.from('market_spaces').select('id, status'),
             supabaseAdmin.from('tenants').select('id'),
             supabaseAdmin.from('lease_contracts').select('id, status'),
             supabaseAdmin.from('payments').select('id, status, charged_amount, paid_amount'),
+            supabaseAdmin.from('expenses').select('id, amount'),
         ]);
 
         const spaces = spacesResult.data || [];
         const tenants = tenantsResult.data || [];
         const contracts = contractsResult.data || [];
         const payments = paymentsResult.data || [];
+        const expenses = expensesResult.data || [];
 
         // Calculate metrics
         const totalSpaces = spaces.length;
@@ -37,6 +39,9 @@ router.get('/overview', async (req: AuthenticatedRequest, res: Response) => {
         const totalRevenue = paidPayments.reduce((sum, p) => sum + p.paid_amount, 0);
         const totalPending = pendingPayments.reduce((sum, p) => sum + (p.charged_amount - p.paid_amount), 0);
         const totalOverdue = overduePayments.reduce((sum, p) => sum + (p.charged_amount - p.paid_amount), 0);
+
+        const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+        const netIncome = totalRevenue - totalExpenses;
 
         return res.json({
             success: true,
@@ -65,7 +70,11 @@ router.get('/overview', async (req: AuthenticatedRequest, res: Response) => {
                     total: totalRevenue,
                     pending: totalPending,
                     overdue: totalOverdue
-                }
+                },
+                expenses: {
+                    total: totalExpenses
+                },
+                netIncome
             }
         });
     } catch (error) {

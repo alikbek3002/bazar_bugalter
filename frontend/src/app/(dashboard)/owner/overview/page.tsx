@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Users, FileText, CreditCard, AlertTriangle, TrendingUp, Loader2 } from 'lucide-react';
+import { Building2, Users, FileText, CreditCard, AlertTriangle, TrendingUp, TrendingDown, MinusCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -34,6 +34,10 @@ interface OverviewStats {
         pending: number;
         overdue: number;
     };
+    expenses: {
+        total: number;
+    };
+    netIncome: number;
 }
 
 export default function OwnerOverviewPage() {
@@ -118,6 +122,22 @@ export default function OwnerOverviewPage() {
             color: 'text-emerald-500',
             bgColor: 'bg-emerald-500/10',
         },
+        {
+            title: 'Расходы',
+            value: stats.expenses.total.toLocaleString('ru-RU', { style: 'currency', currency: 'KGS' }),
+            description: 'Общая сумма расходов',
+            icon: MinusCircle,
+            color: 'text-red-500',
+            bgColor: 'bg-red-500/10',
+        },
+        {
+            title: 'Чистая прибыль',
+            value: stats.netIncome.toLocaleString('ru-RU', { style: 'currency', currency: 'KGS' }),
+            description: 'Доход минус расходы',
+            icon: stats.netIncome >= 0 ? TrendingUp : TrendingDown,
+            color: stats.netIncome >= 0 ? 'text-emerald-600' : 'text-red-600',
+            bgColor: stats.netIncome >= 0 ? 'bg-emerald-600/10' : 'bg-red-600/10',
+        },
     ];
 
     return (
@@ -128,7 +148,7 @@ export default function OwnerOverviewPage() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {cards.map((stat) => (
                     <Card key={stat.title}>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">

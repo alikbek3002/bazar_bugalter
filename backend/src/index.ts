@@ -10,6 +10,7 @@ import contractsRoutes from './routes/contracts.js';
 import paymentsRoutes from './routes/payments.js';
 import statsRoutes from './routes/stats.js';
 import uploadRoutes from './routes/upload.js';
+import expensesRoutes from './routes/expenses.js';
 
 dotenv.config();
 
@@ -50,6 +51,7 @@ app.use('/api/contracts', authMiddleware, contractsRoutes);
 app.use('/api/payments', authMiddleware, paymentsRoutes);
 app.use('/api/stats', authMiddleware, statsRoutes);
 app.use('/api/upload', authMiddleware, uploadRoutes);
+app.use('/api/expenses', authMiddleware, expensesRoutes);
 
 // Error handling
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {

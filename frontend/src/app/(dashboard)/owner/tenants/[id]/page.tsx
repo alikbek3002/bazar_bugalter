@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, Save, Phone, MapPin, Building2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Phone, MapPin, Building2, Trash2, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,7 @@ interface Tenant {
             code: string;
             space_type: string;
         };
+        contract_file_url?: string;
     }[];
 }
 
@@ -354,6 +355,23 @@ export default function TenantDetailsPage() {
 
                                                 <span className="text-muted-foreground">Аренда:</span>
                                                 <span className="font-medium">{contract.monthly_rent?.toLocaleString('ru-RU')} с</span>
+                                            </div>
+
+                                            {/* Contract File */}
+                                            <div className="mt-2 pt-2 border-t">
+                                                {contract.contract_file_url ? (
+                                                    <a
+                                                        href={contract.contract_file_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                                    >
+                                                        <FileDown className="h-4 w-4" />
+                                                        Скачать договор
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-sm text-muted-foreground italic">Файл договора не прикреплён</span>
+                                                )}
                                             </div>
                                         </div>
                                     ))}

@@ -13,7 +13,8 @@ import {
     LogOut,
     Bell,
     ChevronLeft,
-    History
+    History,
+    MinusCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -47,6 +48,7 @@ const ownerMenuItems = [
     { title: 'Торговые места', href: '/owner/spaces', icon: MapPin },
     { title: 'Арендаторы', href: '/owner/tenants', icon: Users },
     { title: 'Платежи', href: '/owner/payments', icon: CreditCard },
+    { title: 'Расходы', href: '/owner/expenses', icon: MinusCircle },
     { title: 'Отчёты', href: '/owner/reports', icon: BarChart3 },
 ];
 
@@ -54,6 +56,7 @@ const accountantMenuItems = [
     { title: 'Торговые места', href: '/accountant/spaces', icon: MapPin },
     { title: 'Арендаторы', href: '/accountant/tenants', icon: Users },
     { title: 'Платежи', href: '/accountant/payments', icon: CreditCard },
+    { title: 'Расходы', href: '/accountant/expenses', icon: MinusCircle },
     { title: 'Отчёты', href: '/accountant/reports', icon: BarChart3 },
 ];
 
