@@ -92,23 +92,23 @@ export default function OwnerOverviewPage() {
     const cards = [
         {
             title: 'Торговых мест',
-            value: stats.spaces.total,
-            description: `${stats.spaces.occupied} занято, ${stats.spaces.vacant} свободно`,
+            value: stats.spaces?.total || 0,
+            description: `${stats.spaces?.occupied || 0} занято, ${stats.spaces?.vacant || 0} свободно`,
             icon: Building2,
             color: 'text-blue-500',
             bgColor: 'bg-blue-500/10',
         },
         {
             title: 'Арендаторов',
-            value: stats.tenants.total,
-            description: `${stats.contracts.active} активных договоров`,
+            value: stats.tenants?.total || 0,
+            description: `${stats.contracts?.active || 0} активных договоров`,
             icon: Users,
             color: 'text-green-500',
             bgColor: 'bg-green-500/10',
         },
         {
             title: 'Заполняемость',
-            value: `${stats.spaces.occupancyRate}%`,
+            value: `${stats.spaces?.occupancyRate || 0}%`,
             description: 'Процент занятых мест',
             icon: TrendingUp,
             color: 'text-purple-500',
@@ -116,7 +116,7 @@ export default function OwnerOverviewPage() {
         },
         {
             title: 'Общий доход',
-            value: stats.revenue.total.toLocaleString('ru-RU', { style: 'currency', currency: 'KGS' }),
+            value: (stats.revenue?.total || 0).toLocaleString('ru-RU', { style: 'currency', currency: 'KGS' }),
             description: 'Сумма оплаченных платежей',
             icon: CreditCard,
             color: 'text-emerald-500',
@@ -124,7 +124,7 @@ export default function OwnerOverviewPage() {
         },
         {
             title: 'Расходы',
-            value: stats.expenses.total.toLocaleString('ru-RU', { style: 'currency', currency: 'KGS' }),
+            value: (stats.expenses?.total || 0).toLocaleString('ru-RU', { style: 'currency', currency: 'KGS' }),
             description: 'Общая сумма расходов',
             icon: MinusCircle,
             color: 'text-red-500',
@@ -132,11 +132,11 @@ export default function OwnerOverviewPage() {
         },
         {
             title: 'Чистая прибыль',
-            value: stats.netIncome.toLocaleString('ru-RU', { style: 'currency', currency: 'KGS' }),
+            value: (stats.netIncome || 0).toLocaleString('ru-RU', { style: 'currency', currency: 'KGS' }),
             description: 'Доход минус расходы',
-            icon: stats.netIncome >= 0 ? TrendingUp : TrendingDown,
-            color: stats.netIncome >= 0 ? 'text-emerald-600' : 'text-red-600',
-            bgColor: stats.netIncome >= 0 ? 'bg-emerald-600/10' : 'bg-red-600/10',
+            icon: (stats.netIncome || 0) >= 0 ? TrendingUp : TrendingDown,
+            color: (stats.netIncome || 0) >= 0 ? 'text-emerald-600' : 'text-red-600',
+            bgColor: (stats.netIncome || 0) >= 0 ? 'bg-emerald-600/10' : 'bg-red-600/10',
         },
     ];
 
@@ -168,7 +168,7 @@ export default function OwnerOverviewPage() {
             </div>
 
             {/* Alerts */}
-            {stats.payments.overdue > 0 && (
+            {(stats.payments?.overdue || 0) > 0 && (
                 <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-orange-700 dark:text-orange-400">
@@ -176,7 +176,7 @@ export default function OwnerOverviewPage() {
                             Просроченные платежи
                         </CardTitle>
                         <CardDescription className="text-orange-600 dark:text-orange-400">
-                            {stats.payments.overdue} платежей с задолженностью на сумму {stats.revenue.overdue.toLocaleString('ru-RU', { style: 'currency', currency: 'KGS' })}
+                            {stats.payments?.overdue || 0} платежей с задолженностью на сумму {(stats.revenue?.overdue || 0).toLocaleString('ru-RU', { style: 'currency', currency: 'KGS' })}
                         </CardDescription>
                     </CardHeader>
                 </Card>
@@ -192,15 +192,15 @@ export default function OwnerOverviewPage() {
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <span className="text-muted-foreground">Занято</span>
-                                <Badge variant="default" className="bg-red-500">{stats.spaces.occupied}</Badge>
+                                <Badge variant="default" className="bg-red-500">{stats.spaces?.occupied || 0}</Badge>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-muted-foreground">Свободно</span>
-                                <Badge variant="default" className="bg-green-500">{stats.spaces.vacant}</Badge>
+                                <Badge variant="default" className="bg-green-500">{stats.spaces?.vacant || 0}</Badge>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-muted-foreground">На обслуживании</span>
-                                <Badge variant="secondary">{stats.spaces.maintenance}</Badge>
+                                <Badge variant="secondary">{stats.spaces?.maintenance || 0}</Badge>
                             </div>
                         </div>
                     </CardContent>
@@ -215,19 +215,19 @@ export default function OwnerOverviewPage() {
                             <div className="flex items-center justify-between">
                                 <span className="text-muted-foreground">Оплачено</span>
                                 <Badge variant="default" className="bg-green-500">
-                                    {stats.payments.paid}
+                                    {stats.payments?.paid || 0}
                                 </Badge>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-muted-foreground">Ожидает оплаты</span>
                                 <Badge variant="default" className="bg-yellow-500">
-                                    {stats.payments.pending}
+                                    {stats.payments?.pending || 0}
                                 </Badge>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-muted-foreground">Просрочено</span>
                                 <Badge variant="destructive">
-                                    {stats.payments.overdue}
+                                    {stats.payments?.overdue || 0}
                                 </Badge>
                             </div>
                         </div>
