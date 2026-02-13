@@ -41,7 +41,7 @@ router.get('/overview', async (req: AuthenticatedRequest, res: Response) => {
         const totalOverdue = overduePayments.reduce((sum, p) => sum + (p.charged_amount - p.paid_amount), 0);
 
         const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-        const netIncome = totalRevenue - totalExpenses;
+        const netIncome = Math.max(0, totalRevenue - totalExpenses);
 
         return res.json({
             success: true,
