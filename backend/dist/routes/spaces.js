@@ -153,21 +153,29 @@ router.put('/:id', (0, auth_js_1.requireRole)('owner'), async (req, res) => {
         const { code, sector, space_type, area_sqm, base_rent, status, description } = req.body;
         // Build update object with only valid fields
         const updates = {};
-        if (code !== undefined)
-            updates.code = code;
+        if (code !== undefined && code !== null && code !== '')
+            updates.code = String(code);
         if (sector !== undefined)
             updates.sector = sector || null;
-        if (space_type !== undefined)
-            updates.space_type = space_type || null;
+        // space_type is an enum — only send if it has a valid value, skip if empty/null
+        if (space_type && space_type !== '')
+            updates.space_type = space_type;
         if (area_sqm !== undefined)
             updates.area_sqm = area_sqm !== null && area_sqm !== '' ? parseFloat(String(area_sqm)) : null;
         if (base_rent !== undefined)
             updates.base_rent = base_rent !== null && base_rent !== '' ? parseFloat(String(base_rent)) : null;
-        if (status !== undefined)
+        // status is an enum — only send if it has a valid value
+        if (status && status !== '')
             updates.status = status;
         if (description !== undefined)
             updates.description = description || null;
-        console.log('Updating space:', id, 'with:', updates);
+        console.log('Updating space:', id, 'with:', JSON.stringify(updates));
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Нет данных для обновления'
+            });
+        }
         const { data, error } = await supabase_js_1.supabaseAdmin
             .from('market_spaces')
             .update(updates)
@@ -175,14 +183,17 @@ router.put('/:id', (0, auth_js_1.requireRole)('owner'), async (req, res) => {
             .select()
             .single();
         if (error) {
-            console.error('Supabase update error:', error);
+            console.error('Supabase update error:', JSON.stringify(error));
             if (error.code === '23505') {
                 return res.status(400).json({
                     success: false,
                     error: 'Место с таким кодом уже существует'
                 });
             }
-            throw error;
+            return res.status(500).json({
+                success: false,
+                error: error.message || 'Failed to update space'
+            });
         }
         return res.json({
             success: true,
