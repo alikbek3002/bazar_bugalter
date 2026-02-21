@@ -1,6 +1,6 @@
 export type UserRole = 'owner' | 'accountant' | 'tenant';
 
-export type SpaceType = 'kiosk' | 'pavilion' | 'open_space' | 'container';
+export type SpaceType = 'kiosk' | 'pavilion' | 'open_space' | 'container' | 'building';
 
 export type SpaceStatus = 'occupied' | 'vacant';
 

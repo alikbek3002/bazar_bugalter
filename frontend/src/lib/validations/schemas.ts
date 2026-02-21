@@ -7,7 +7,7 @@ export const marketSpaceSchema = z.object({
     row_number: z.string().optional(),
     place_number: z.string().optional(),
     area_sqm: z.coerce.number().positive('Площадь должна быть положительной').optional(),
-    space_type: z.enum(['kiosk', 'pavilion', 'open_space', 'container']).optional(),
+    space_type: z.enum(['kiosk', 'pavilion', 'open_space', 'container', 'building']).optional(),
     business_type: z.string().optional(),
     status: z.enum(['occupied', 'vacant', 'maintenance']).default('vacant'),
     photos: z.array(z.string()).optional(),

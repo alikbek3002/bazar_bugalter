@@ -5,6 +5,7 @@ export const SPACE_TYPES = {
     pavilion: 'Павильон',
     open_space: 'Открытая площадка',
     container: 'Контейнер',
+    building: 'Здание',
 } as const;
 
 export const SPACE_STATUSES = {
