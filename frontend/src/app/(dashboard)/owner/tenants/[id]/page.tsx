@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, Save, Phone, MapPin, Building2, Trash2, FileDown } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Phone, MapPin, Building2, Trash2, FileDown, Pencil, X, Upload, Check, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -12,9 +12,26 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FileUpload } from '@/components/ui/FileUpload';
 import { CONTRACT_STATUSES, STATUS_COLORS } from '@/lib/constants';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+interface ContractData {
+    id: string;
+    status: string;
+    monthly_rent: number;
+    start_date: string;
+    end_date?: string;
+    deposit_amount?: number;
+    payment_day?: number;
+    space: {
+        code: string;
+        space_type: string;
+    };
+    contract_file_url?: string;
+}
 
 interface Tenant {
     id: string;
@@ -24,18 +41,15 @@ interface Tenant {
     company_name?: string;
     address?: string;
     notes?: string;
-    contracts: {
-        id: string;
-        status: string;
-        monthly_rent: number;
-        start_date: string;
-        end_date?: string;
-        space: {
-            code: string;
-            space_type: string;
-        };
-        contract_file_url?: string;
-    }[];
+    contracts: ContractData[];
+}
+
+interface ContractEditForm {
+    start_date: string;
+    end_date: string;
+    monthly_rent: string;
+    status: string;
+    contract_file_url: string;
 }
 
 export default function TenantDetailsPage() {
@@ -47,6 +61,18 @@ export default function TenantDetailsPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+    // Contract editing state
+    const [editingContractId, setEditingContractId] = useState<string | null>(null);
+    const [contractEditForm, setContractEditForm] = useState<ContractEditForm>({
+        start_date: '',
+        end_date: '',
+        monthly_rent: '',
+        status: '',
+        contract_file_url: '',
+    });
+    const [isSavingContract, setIsSavingContract] = useState(false);
+    const [showDocUpload, setShowDocUpload] = useState(false);
+
     // Form state
     const [formData, setFormData] = useState({
         full_name: '',
@@ -57,45 +83,45 @@ export default function TenantDetailsPage() {
         notes: ''
     });
 
-    useEffect(() => {
-        const fetchTenant = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    window.location.href = '/login';
-                    return;
-                }
-
-                const response = await fetch(`${API_URL}/api/tenants/${params.id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                const result = await response.json();
-
-                if (!response.ok || !result.success) {
-                    throw new Error(result.error || 'Failed to fetch tenant');
-                }
-
-                const data = result.data;
-                setTenant(data);
-                setFormData({
-                    full_name: data.full_name || '',
-                    phone: data.phone || '',
-                    company_name: data.company_name || '',
-                    inn_idn: data.inn_idn || '',
-                    address: data.address || '',
-                    notes: data.notes || ''
-                });
-            } catch (error) {
-                console.error('Error fetching tenant:', error);
-                toast.error('Ошибка загрузки арендатора');
-            } finally {
-                setIsLoading(false);
+    const fetchTenant = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
             }
-        };
 
+            const response = await fetch(`${API_URL}/api/tenants/${params.id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'Failed to fetch tenant');
+            }
+
+            const data = result.data;
+            setTenant(data);
+            setFormData({
+                full_name: data.full_name || '',
+                phone: data.phone || '',
+                company_name: data.company_name || '',
+                inn_idn: data.inn_idn || '',
+                address: data.address || '',
+                notes: data.notes || ''
+            });
+        } catch (error) {
+            console.error('Error fetching tenant:', error);
+            toast.error('Ошибка загрузки арендатора');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
         if (params.id) {
             fetchTenant();
         }
@@ -150,6 +176,76 @@ export default function TenantDetailsPage() {
             setIsDeleting(false);
             setShowDeleteConfirm(false);
         }
+    };
+
+    // --- Contract editing ---
+    const startEditingContract = (contract: ContractData) => {
+        setEditingContractId(contract.id);
+        setContractEditForm({
+            start_date: contract.start_date?.split('T')[0] || '',
+            end_date: contract.end_date?.split('T')[0] || '',
+            monthly_rent: String(contract.monthly_rent || ''),
+            status: contract.status,
+            contract_file_url: contract.contract_file_url || '',
+        });
+        setShowDocUpload(false);
+    };
+
+    const cancelEditingContract = () => {
+        setEditingContractId(null);
+        setShowDocUpload(false);
+    };
+
+    const handleSaveContract = async () => {
+        if (!editingContractId) return;
+
+        setIsSavingContract(true);
+        try {
+            const token = localStorage.getItem('token');
+
+            const updates: Record<string, unknown> = {
+                start_date: contractEditForm.start_date,
+                end_date: contractEditForm.end_date || null,
+                monthly_rent: parseFloat(contractEditForm.monthly_rent),
+                status: contractEditForm.status,
+            };
+
+            // Include contract_file_url if changed
+            if (contractEditForm.contract_file_url) {
+                updates.contract_file_url = contractEditForm.contract_file_url;
+            }
+
+            const response = await fetch(`${API_URL}/api/contracts/${editingContractId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(updates)
+            });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error);
+
+            toast.success('Договор обновлён');
+            setEditingContractId(null);
+            setShowDocUpload(false);
+
+            // Refresh tenant data
+            setIsLoading(true);
+            await fetchTenant();
+        } catch (error) {
+            console.error('Update contract error:', error);
+            toast.error('Ошибка обновления договора');
+        } finally {
+            setIsSavingContract(false);
+        }
+    };
+
+    const handleDocumentUpload = (url: string) => {
+        setContractEditForm(prev => ({ ...prev, contract_file_url: url }));
+        setShowDocUpload(false);
+        toast.success('Новый документ загружен. Нажмите "Сохранить" для применения.');
     };
 
     if (isLoading) {
@@ -330,51 +426,212 @@ export default function TenantDetailsPage() {
                         <CardContent>
                             {tenant.contracts && tenant.contracts.length > 0 ? (
                                 <div className="space-y-4">
-                                    {tenant.contracts.map(contract => (
-                                        <div key={contract.id} className="flex flex-col p-4 border rounded-lg gap-2">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <div className="font-bold text-lg">{contract.space?.code || 'Место удалено'}</div>
-                                                    <div className="text-sm text-muted-foreground">{contract.space?.space_type}</div>
+                                    {tenant.contracts.map(contract => {
+                                        const isEditing = editingContractId === contract.id;
+
+                                        return (
+                                            <div key={contract.id} className={`flex flex-col p-4 border rounded-lg gap-2 transition-colors ${isEditing ? 'border-blue-400 bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <div className="font-bold text-lg">{contract.space?.code || 'Место удалено'}</div>
+                                                        <div className="text-sm text-muted-foreground">{contract.space?.space_type}</div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {!isEditing ? (
+                                                            <>
+                                                                <Badge className={STATUS_COLORS[contract.status as keyof typeof STATUS_COLORS]}>
+                                                                    {CONTRACT_STATUSES[contract.status as keyof typeof CONTRACT_STATUSES]}
+                                                                </Badge>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8"
+                                                                    onClick={() => startEditingContract(contract)}
+                                                                    title="Редактировать договор"
+                                                                >
+                                                                    <Pencil className="h-4 w-4" />
+                                                                </Button>
+                                                            </>
+                                                        ) : (
+                                                            <Badge className="bg-blue-100 text-blue-800">Редактирование</Badge>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <Badge className={STATUS_COLORS[contract.status as keyof typeof STATUS_COLORS]}>
-                                                    {CONTRACT_STATUSES[contract.status as keyof typeof CONTRACT_STATUSES]}
-                                                </Badge>
-                                            </div>
 
-                                            <div className="grid grid-cols-2 text-sm gap-y-1 mt-2">
-                                                <span className="text-muted-foreground">Начало:</span>
-                                                <span>{new Date(contract.start_date).toLocaleDateString('ru-RU')}</span>
+                                                {isEditing ? (
+                                                    /* --- EDITING MODE --- */
+                                                    <div className="space-y-3 mt-2">
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            <div className="space-y-1">
+                                                                <Label className="text-xs">Дата начала</Label>
+                                                                <Input
+                                                                    type="date"
+                                                                    value={contractEditForm.start_date}
+                                                                    onChange={(e) => setContractEditForm(prev => ({ ...prev, start_date: e.target.value }))}
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <Label className="text-xs">Дата окончания</Label>
+                                                                <Input
+                                                                    type="date"
+                                                                    value={contractEditForm.end_date}
+                                                                    onChange={(e) => setContractEditForm(prev => ({ ...prev, end_date: e.target.value }))}
+                                                                />
+                                                            </div>
+                                                        </div>
 
-                                                {contract.end_date && (
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            <div className="space-y-1">
+                                                                <Label className="text-xs">Месячная аренда (сом)</Label>
+                                                                <Input
+                                                                    type="number"
+                                                                    value={contractEditForm.monthly_rent}
+                                                                    onChange={(e) => setContractEditForm(prev => ({ ...prev, monthly_rent: e.target.value }))}
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <Label className="text-xs">Статус</Label>
+                                                                <Select
+                                                                    value={contractEditForm.status}
+                                                                    onValueChange={(val) => setContractEditForm(prev => ({ ...prev, status: val }))}
+                                                                >
+                                                                    <SelectTrigger>
+                                                                        <SelectValue />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="active">Активный</SelectItem>
+                                                                        <SelectItem value="expired">Истёк</SelectItem>
+                                                                        <SelectItem value="terminated">Расторгнут</SelectItem>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Document section */}
+                                                        <div className="space-y-2 pt-2 border-t">
+                                                            <Label className="text-xs">Документ договора</Label>
+                                                            {contractEditForm.contract_file_url ? (
+                                                                <div className="flex items-center gap-2 p-3 border rounded-lg bg-green-50 dark:bg-green-900/20">
+                                                                    <Check className="h-4 w-4 text-green-600 shrink-0" />
+                                                                    <span className="text-sm text-green-700 dark:text-green-400 truncate flex-1">
+                                                                        Документ прикреплён
+                                                                    </span>
+                                                                    <a
+                                                                        href={contractEditForm.contract_file_url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="text-blue-600 hover:underline"
+                                                                    >
+                                                                        <FileText className="h-4 w-4" />
+                                                                    </a>
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="text-xs h-7"
+                                                                        onClick={() => setShowDocUpload(true)}
+                                                                    >
+                                                                        <Upload className="h-3 w-3 mr-1" />
+                                                                        Заменить
+                                                                    </Button>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center gap-2 p-3 border rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
+                                                                    <span className="text-sm text-muted-foreground italic flex-1">
+                                                                        Файл не прикреплён
+                                                                    </span>
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="text-xs h-7"
+                                                                        onClick={() => setShowDocUpload(true)}
+                                                                    >
+                                                                        <Upload className="h-3 w-3 mr-1" />
+                                                                        Загрузить
+                                                                    </Button>
+                                                                </div>
+                                                            )}
+
+                                                            {showDocUpload && (
+                                                                <div className="mt-2">
+                                                                    <FileUpload
+                                                                        type="document"
+                                                                        accept=".pdf,.doc,.docx"
+                                                                        tenantName={tenant.full_name}
+                                                                        onUpload={handleDocumentUpload}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Action buttons */}
+                                                        <div className="flex justify-end gap-2 pt-2">
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={cancelEditingContract}
+                                                                disabled={isSavingContract}
+                                                            >
+                                                                <X className="mr-1 h-4 w-4" />
+                                                                Отмена
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                onClick={handleSaveContract}
+                                                                disabled={isSavingContract}
+                                                            >
+                                                                {isSavingContract ? (
+                                                                    <>
+                                                                        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                                                                        Сохранение...
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Save className="mr-1 h-4 w-4" />
+                                                                        Сохранить
+                                                                    </>
+                                                                )}
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    /* --- VIEW MODE --- */
                                                     <>
-                                                        <span className="text-muted-foreground">Конец:</span>
-                                                        <span>{new Date(contract.end_date).toLocaleDateString('ru-RU')}</span>
+                                                        <div className="grid grid-cols-2 text-sm gap-y-1 mt-2">
+                                                            <span className="text-muted-foreground">Начало:</span>
+                                                            <span>{new Date(contract.start_date).toLocaleDateString('ru-RU')}</span>
+
+                                                            {contract.end_date && (
+                                                                <>
+                                                                    <span className="text-muted-foreground">Конец:</span>
+                                                                    <span>{new Date(contract.end_date).toLocaleDateString('ru-RU')}</span>
+                                                                </>
+                                                            )}
+
+                                                            <span className="text-muted-foreground">Аренда:</span>
+                                                            <span className="font-medium">{contract.monthly_rent?.toLocaleString('ru-RU')} с</span>
+                                                        </div>
+
+                                                        {/* Contract File */}
+                                                        <div className="mt-2 pt-2 border-t">
+                                                            {contract.contract_file_url ? (
+                                                                <a
+                                                                    href={contract.contract_file_url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                                                >
+                                                                    <FileDown className="h-4 w-4" />
+                                                                    Скачать договор
+                                                                </a>
+                                                            ) : (
+                                                                <span className="text-sm text-muted-foreground italic">Файл договора не прикреплён</span>
+                                                            )}
+                                                        </div>
                                                     </>
                                                 )}
-
-                                                <span className="text-muted-foreground">Аренда:</span>
-                                                <span className="font-medium">{contract.monthly_rent?.toLocaleString('ru-RU')} с</span>
                                             </div>
-
-                                            {/* Contract File */}
-                                            <div className="mt-2 pt-2 border-t">
-                                                {contract.contract_file_url ? (
-                                                    <a
-                                                        href={contract.contract_file_url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                                                    >
-                                                        <FileDown className="h-4 w-4" />
-                                                        Скачать договор
-                                                    </a>
-                                                ) : (
-                                                    <span className="text-sm text-muted-foreground italic">Файл договора не прикреплён</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <div className="text-center text-muted-foreground py-10">
