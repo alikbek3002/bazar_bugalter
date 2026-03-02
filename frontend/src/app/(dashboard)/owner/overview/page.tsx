@@ -53,6 +53,15 @@ export default function OwnerOverviewPage() {
                     return;
                 }
 
+                // Auto-generate pending payments and update overdue statuses
+                await fetch(`${API_URL}/api/payments/generate-monthly`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                }).catch(err => console.error('Generate monthly payments error:', err));
+
                 const response = await fetch(`${API_URL}/api/stats/overview`, {
                     headers: {
                         'Authorization': `Bearer ${token}`

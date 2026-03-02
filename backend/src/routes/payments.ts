@@ -5,6 +5,98 @@ import { requireRole } from '../middleware/auth.js';
 
 const router = Router();
 
+// POST /api/payments/generate-monthly - Auto-generate pending payments for active contracts
+router.post('/generate-monthly', async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth(); // 0-indexed
+        const periodMonth = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0]; // e.g. "2026-03-01"
+        const today = now.toISOString().split('T')[0]; // e.g. "2026-03-02"
+
+        // Step 1: Get all active contracts with space_id
+        const { data: contracts, error: contractsError } = await supabaseAdmin
+            .from('lease_contracts')
+            .select('id, tenant_id, space_id, monthly_rent, payment_day')
+            .eq('status', 'active');
+
+        if (contractsError) throw contractsError;
+
+        let created = 0;
+        let alreadyExist = 0;
+
+        if (contracts && contracts.length > 0) {
+            for (const contract of contracts) {
+                // Check if payment for this contract and this month already exists
+                const { data: existing } = await supabaseAdmin
+                    .from('payments')
+                    .select('id')
+                    .eq('contract_id', contract.id)
+                    .gte('period_month', periodMonth)
+                    .lt('period_month', new Date(currentYear, currentMonth + 1, 1).toISOString().split('T')[0])
+                    .limit(1);
+
+                if (existing && existing.length > 0) {
+                    alreadyExist++;
+                    continue;
+                }
+
+                // Calculate due_date based on payment_day
+                const paymentDay = contract.payment_day || 1;
+                // Handle months with fewer days (e.g. Feb 30 -> Feb 28)
+                const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+                const actualDay = Math.min(paymentDay, lastDayOfMonth);
+                const dueDate = new Date(currentYear, currentMonth, actualDay).toISOString().split('T')[0];
+
+                // Create pending payment
+                const { error: insertError } = await supabaseAdmin
+                    .from('payments')
+                    .insert({
+                        contract_id: contract.id,
+                        tenant_id: contract.tenant_id,
+                        space_id: contract.space_id,
+                        period_month: periodMonth,
+                        charged_amount: contract.monthly_rent,
+                        paid_amount: 0,
+                        due_date: dueDate,
+                        status: 'pending'
+                    });
+
+                if (!insertError) {
+                    created++;
+                }
+            }
+        }
+
+        // Step 2: Update overdue payments (pending payments whose due_date has passed)
+        const { data: overdueUpdated, error: overdueError } = await supabaseAdmin
+            .from('payments')
+            .update({ status: 'overdue' })
+            .eq('status', 'pending')
+            .lt('due_date', today)
+            .select('id');
+
+        if (overdueError) {
+            console.error('Error updating overdue payments:', overdueError);
+        }
+
+        return res.json({
+            success: true,
+            data: {
+                created,
+                alreadyExist,
+                markedOverdue: overdueUpdated?.length || 0
+            }
+        });
+    } catch (error) {
+        console.error('Generate monthly payments error:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Failed to generate monthly payments'
+        });
+    }
+});
+
 // GET /api/payments - Get all payments
 router.get('/', async (req: AuthenticatedRequest, res: Response) => {
     try {
