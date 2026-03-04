@@ -7,7 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CreditCard, Loader2, Plus, AlertTriangle, Clock, CheckCircle, Banknote } from 'lucide-react';
+import {
+    CreditCard, Loader2, Plus, AlertTriangle, Clock, CheckCircle,
+    Banknote, Trash2, ChevronLeft, ChevronRight, MoreHorizontal
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -33,22 +36,33 @@ interface Payment {
     status: string;
     period_start: string;
     period_end: string;
+    period_month?: string;
     payment_method?: string;
     due_date?: string;
     paid_at?: string;
     notes?: string;
-    contract?: {
+    tenant?: {
         id: string;
-        tenant?: {
-            id: string;
-            full_name: string;
-        };
+        full_name: string;
+        phone?: string;
+    };
+    contract?: {
         space?: {
             id: string;
             code: string;
         };
     };
+    space?: {
+        id: string;
+        code: string;
+        space_type?: string;
+    };
 }
+
+const MONTH_NAMES = [
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+];
 
 export default function OwnerPaymentsPage() {
     const [payments, setPayments] = useState<Payment[]>([]);
@@ -58,6 +72,17 @@ export default function OwnerPaymentsPage() {
     const [payAmount, setPayAmount] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
 
+    // Month filter
+    const now = new Date();
+    const [filterYear, setFilterYear] = useState(now.getFullYear());
+    const [filterMonth, setFilterMonth] = useState(now.getMonth()); // 0-indexed
+
+    // Status menu
+    const [statusMenuPaymentId, setStatusMenuPaymentId] = useState<string | null>(null);
+
+    // Delete confirmation
+    const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
+
     const fetchPayments = async () => {
         try {
             const token = localStorage.getItem('token');
@@ -66,7 +91,7 @@ export default function OwnerPaymentsPage() {
                 return;
             }
 
-            const response = await fetch(`${API_URL}/api/payments?limit=200`, {
+            const response = await fetch(`${API_URL}/api/payments?limit=500`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -87,6 +112,38 @@ export default function OwnerPaymentsPage() {
     useEffect(() => {
         fetchPayments();
     }, []);
+
+    // Filter payments by selected month
+    const filteredPayments = payments.filter(p => {
+        const dateStr = p.period_month || p.period_start;
+        if (!dateStr) return false;
+        const d = new Date(dateStr);
+        return d.getFullYear() === filterYear && d.getMonth() === filterMonth;
+    });
+
+    const goToPrevMonth = () => {
+        if (filterMonth === 0) {
+            setFilterMonth(11);
+            setFilterYear(filterYear - 1);
+        } else {
+            setFilterMonth(filterMonth - 1);
+        }
+    };
+
+    const goToNextMonth = () => {
+        if (filterMonth === 11) {
+            setFilterMonth(0);
+            setFilterYear(filterYear + 1);
+        } else {
+            setFilterMonth(filterMonth + 1);
+        }
+    };
+
+    const goToCurrentMonth = () => {
+        const now = new Date();
+        setFilterYear(now.getFullYear());
+        setFilterMonth(now.getMonth());
+    };
 
     const openPayModal = (payment: Payment) => {
         const remaining = payment.charged_amount - payment.paid_amount;
@@ -143,11 +200,57 @@ export default function OwnerPaymentsPage() {
         }
     };
 
-    // Stats
-    const paid = payments.filter(p => p.status === 'paid');
-    const pending = payments.filter(p => p.status === 'pending');
-    const partial = payments.filter(p => p.status === 'partial');
-    const overdue = payments.filter(p => p.status === 'overdue');
+    const handleChangeStatus = async (paymentId: string, newStatus: string) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/payments/${paymentId}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error);
+
+            toast.success(`Статус изменён на "${STATUS_LABELS[newStatus]}"`);
+            setStatusMenuPaymentId(null);
+            await fetchPayments();
+        } catch (error: any) {
+            console.error('Change status error:', error);
+            toast.error(error.message || 'Ошибка изменения статуса');
+        }
+    };
+
+    const handleDelete = async (paymentId: string) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/payments/${paymentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error);
+
+            toast.success('Платёж удалён');
+            setDeletePaymentId(null);
+            await fetchPayments();
+        } catch (error: any) {
+            console.error('Delete error:', error);
+            toast.error(error.message || 'Ошибка удаления');
+        }
+    };
+
+    // Stats based on filtered payments
+    const paid = filteredPayments.filter(p => p.status === 'paid');
+    const pending = filteredPayments.filter(p => p.status === 'pending');
+    const partial = filteredPayments.filter(p => p.status === 'partial');
+    const overdue = filteredPayments.filter(p => p.status === 'overdue');
 
     if (isLoading) {
         return (
@@ -170,6 +273,22 @@ export default function OwnerPaymentsPage() {
                         Новый платёж
                     </Button>
                 </Link>
+            </div>
+
+            {/* Month Filter */}
+            <div className="flex items-center gap-3">
+                <Button variant="outline" size="icon" onClick={goToPrevMonth}>
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="text-lg font-semibold min-w-[180px] text-center">
+                    {MONTH_NAMES[filterMonth]} {filterYear}
+                </div>
+                <Button variant="outline" size="icon" onClick={goToNextMonth}>
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={goToCurrentMonth}>
+                    Текущий месяц
+                </Button>
             </div>
 
             {/* Stats */}
@@ -216,53 +335,50 @@ export default function OwnerPaymentsPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Список платежей</CardTitle>
-                    <CardDescription>Всего {payments.length} записей</CardDescription>
+                    <CardDescription>
+                        {MONTH_NAMES[filterMonth]} {filterYear} — всего {filteredPayments.length} записей
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {payments.length === 0 ? (
+                    {filteredPayments.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">
                             <CreditCard className="h-16 w-16 mx-auto mb-4 opacity-20" />
-                            <p className="text-lg">Платежей нет</p>
-                            <p className="text-sm mb-4">Создайте первый платёж</p>
-                            <Link href="/owner/payments/new">
-                                <Button>
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Новый платёж
-                                </Button>
-                            </Link>
+                            <p className="text-lg">Платежей за этот месяц нет</p>
+                            <p className="text-sm mb-4">Создайте платёж или выберите другой месяц</p>
                         </div>
                     ) : (
                         <div className="space-y-2">
                             {/* Table Header */}
-                            <div className="grid grid-cols-7 gap-4 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg font-medium text-sm">
+                            <div className="grid grid-cols-8 gap-4 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg font-medium text-sm">
                                 <div>Арендатор</div>
                                 <div>Место</div>
-                                <div>Период</div>
+                                <div>Срок оплаты</div>
                                 <div>Начислено</div>
                                 <div>Оплачено</div>
                                 <div>Статус</div>
-                                <div>Действия</div>
+                                <div className="col-span-2">Действия</div>
                             </div>
                             {/* Table Body */}
-                            {payments.map((payment) => {
+                            {filteredPayments.map((payment) => {
                                 const remaining = payment.charged_amount - payment.paid_amount;
                                 const canPay = ['pending', 'partial', 'overdue'].includes(payment.status);
+                                const spaceCode = payment.space?.code || payment.contract?.space?.code || '—';
 
                                 return (
                                     <div
                                         key={payment.id}
-                                        className="grid grid-cols-7 gap-4 px-4 py-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                                        className="grid grid-cols-8 gap-4 px-4 py-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                                     >
                                         <div className="font-medium">
-                                            {payment.contract?.tenant?.full_name || '—'}
+                                            {payment.tenant?.full_name || '—'}
                                         </div>
                                         <div className="text-muted-foreground">
-                                            {payment.contract?.space?.code || '—'}
+                                            {spaceCode}
                                         </div>
                                         <div className="text-sm text-muted-foreground">
-                                            {new Date(payment.period_start).toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' })}
-                                            {' – '}
-                                            {new Date(payment.period_end).toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' })}
+                                            {payment.due_date
+                                                ? new Date(payment.due_date).toLocaleDateString('ru-RU')
+                                                : '—'}
                                         </div>
                                         <div className="font-medium">
                                             {payment.charged_amount.toLocaleString('ru-RU')} сом
@@ -275,12 +391,33 @@ export default function OwnerPaymentsPage() {
                                                 </span>
                                             )}
                                         </div>
-                                        <div>
-                                            <Badge className={STATUS_COLORS[payment.status] || 'bg-gray-100 text-gray-800'}>
+                                        <div className="relative">
+                                            <Badge
+                                                className={`${STATUS_COLORS[payment.status] || 'bg-gray-100 text-gray-800'} cursor-pointer`}
+                                                onClick={() => setStatusMenuPaymentId(
+                                                    statusMenuPaymentId === payment.id ? null : payment.id
+                                                )}
+                                            >
                                                 {STATUS_LABELS[payment.status] || payment.status}
                                             </Badge>
+                                            {/* Status dropdown */}
+                                            {statusMenuPaymentId === payment.id && (
+                                                <div className="absolute z-50 mt-1 bg-white dark:bg-slate-900 border rounded-lg shadow-lg py-1 min-w-[140px] left-0">
+                                                    {Object.entries(STATUS_LABELS).map(([key, label]) => (
+                                                        <button
+                                                            key={key}
+                                                            className={`w-full text-left px-3 py-1.5 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 ${payment.status === key ? 'font-bold' : ''}`}
+                                                            onClick={() => handleChangeStatus(payment.id, key)}
+                                                        >
+                                                            <Badge className={`${STATUS_COLORS[key]} mr-2`} >
+                                                                {label}
+                                                            </Badge>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
-                                        <div>
+                                        <div className="col-span-2 flex gap-2">
                                             {canPay && (
                                                 <Button
                                                     size="sm"
@@ -291,6 +428,14 @@ export default function OwnerPaymentsPage() {
                                                     {payment.paid_amount > 0 ? 'Доплатить' : 'Оплатить'}
                                                 </Button>
                                             )}
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                onClick={() => setDeletePaymentId(payment.id)}
+                                            >
+                                                <Trash2 className="h-3 w-3" />
+                                            </Button>
                                         </div>
                                     </div>
                                 );
@@ -299,6 +444,11 @@ export default function OwnerPaymentsPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Close status menu on outside click */}
+            {statusMenuPaymentId && (
+                <div className="fixed inset-0 z-40" onClick={() => setStatusMenuPaymentId(null)} />
+            )}
 
             {/* Pay Modal */}
             {showPayModal && selectedPayment && (
@@ -310,7 +460,7 @@ export default function OwnerPaymentsPage() {
                                 {selectedPayment.paid_amount > 0 ? 'Доплата' : 'Оплата'} платежа
                             </CardTitle>
                             <CardDescription>
-                                {selectedPayment.contract?.tenant?.full_name} — {selectedPayment.contract?.space?.code}
+                                {selectedPayment.tenant?.full_name} — {selectedPayment.space?.code || selectedPayment.contract?.space?.code}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -366,6 +516,40 @@ export default function OwnerPaymentsPage() {
                                             Подтвердить оплату
                                         </>
                                     )}
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deletePaymentId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                    <Card className="w-full max-w-sm mx-4">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-red-600">
+                                <Trash2 className="h-5 w-5" />
+                                Удалить платёж?
+                            </CardTitle>
+                            <CardDescription>
+                                Это действие нельзя отменить. Платёж будет удалён безвозвратно.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex justify-end gap-3">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setDeletePaymentId(null)}
+                                >
+                                    Отмена
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    onClick={() => handleDelete(deletePaymentId)}
+                                >
+                                    <Trash2 className="h-4 w-4 mr-1" />
+                                    Удалить
                                 </Button>
                             </div>
                         </CardContent>

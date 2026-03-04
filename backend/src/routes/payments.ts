@@ -392,4 +392,89 @@ router.post('/:id/pay', requireRole('owner', 'accountant'), async (req: Authenti
     }
 });
 
+// PATCH /api/payments/:id/status - Change payment status
+router.patch('/:id/status', requireRole('owner', 'accountant'), async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        const validStatuses = ['pending', 'paid', 'partial', 'overdue'];
+        if (!status || !validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                error: `Статус должен быть одним из: ${validStatuses.join(', ')}`
+            });
+        }
+
+        const updates: Record<string, unknown> = {
+            status
+        };
+
+        // If marking as paid, set paid_at and set paid_amount = charged_amount
+        if (status === 'paid') {
+            const { data: currentPayment } = await supabaseAdmin
+                .from('payments')
+                .select('charged_amount')
+                .eq('id', id)
+                .single();
+            if (currentPayment) {
+                updates.paid_amount = currentPayment.charged_amount;
+                updates.paid_at = new Date().toISOString();
+            }
+        }
+
+        // Track who made this change
+        const userId = req.user?.id;
+        if (userId) {
+            updates.marked_by = userId;
+            updates.marked_at = new Date().toISOString();
+        }
+
+        const { data, error } = await supabaseAdmin
+            .from('payments')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        return res.json({
+            success: true,
+            data
+        });
+    } catch (error) {
+        console.error('Update payment status error:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Ошибка изменения статуса платежа'
+        });
+    }
+});
+
+// DELETE /api/payments/:id - Delete a payment
+router.delete('/:id', requireRole('owner'), async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+
+        const { error } = await supabaseAdmin
+            .from('payments')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        return res.json({
+            success: true,
+            message: 'Платёж успешно удалён'
+        });
+    } catch (error) {
+        console.error('Delete payment error:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Ошибка удаления платежа'
+        });
+    }
+});
+
 export default router;
