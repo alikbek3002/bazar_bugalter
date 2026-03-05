@@ -29,7 +29,7 @@ console.log('CORS Origin configured as:', origin);
 app.use((0, cors_1.default)({
     origin: origin,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express_1.default.json());
