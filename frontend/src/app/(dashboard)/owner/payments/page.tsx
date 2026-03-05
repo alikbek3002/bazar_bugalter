@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
     CreditCard, Loader2, Plus, AlertTriangle, Clock, CheckCircle,
-    Banknote, Trash2, ChevronLeft, ChevronRight, MoreHorizontal
+    Banknote, Trash2, ChevronLeft, ChevronRight, Search, ListFilter, CalendarDays, List
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -64,6 +64,10 @@ const MONTH_NAMES = [
     'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
 ];
 
+type TabType = 'monthly' | 'all';
+
+const ITEMS_PER_PAGE = 50;
+
 export default function OwnerPaymentsPage() {
     const [payments, setPayments] = useState<Payment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -72,10 +76,18 @@ export default function OwnerPaymentsPage() {
     const [payAmount, setPayAmount] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Month filter
+    // Current tab
+    const [activeTab, setActiveTab] = useState<TabType>('monthly');
+
+    // Month filter (for "monthly" tab)
     const now = new Date();
     const [filterYear, setFilterYear] = useState(now.getFullYear());
-    const [filterMonth, setFilterMonth] = useState(now.getMonth()); // 0-indexed
+    const [filterMonth, setFilterMonth] = useState(now.getMonth());
+
+    // All payments tab filters
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [allPage, setAllPage] = useState(1);
 
     // Status menu
     const [statusMenuPaymentId, setStatusMenuPaymentId] = useState<string | null>(null);
@@ -91,7 +103,7 @@ export default function OwnerPaymentsPage() {
                 return;
             }
 
-            const response = await fetch(`${API_URL}/api/payments?limit=500`, {
+            const response = await fetch(`${API_URL}/api/payments?limit=5000`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -113,14 +125,53 @@ export default function OwnerPaymentsPage() {
         fetchPayments();
     }, []);
 
-    // Filter payments by selected month
-    const filteredPayments = payments.filter(p => {
+    // ======= Monthly tab: filter by month =======
+    const filteredByMonth = payments.filter(p => {
         const dateStr = p.period_month || p.period_start;
         if (!dateStr) return false;
         const d = new Date(dateStr);
         return d.getFullYear() === filterYear && d.getMonth() === filterMonth;
     });
 
+    // ======= All tab: filter by search + status =======
+    const filteredAll = useMemo(() => {
+        let result = [...payments];
+
+        // Search by tenant name or space code
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            result = result.filter(p =>
+                (p.tenant?.full_name || '').toLowerCase().includes(q) ||
+                (p.space?.code || p.contract?.space?.code || '').toLowerCase().includes(q) ||
+                (p.tenant?.phone || '').toLowerCase().includes(q)
+            );
+        }
+
+        // Filter by status
+        if (statusFilter !== 'all') {
+            result = result.filter(p => p.status === statusFilter);
+        }
+
+        // Sort by due_date descending
+        result.sort((a, b) => {
+            const dateA = a.due_date || a.period_month || a.period_start || '';
+            const dateB = b.due_date || b.period_month || b.period_start || '';
+            return dateB.localeCompare(dateA);
+        });
+
+        return result;
+    }, [payments, searchQuery, statusFilter]);
+
+    // Pagination for "all" tab
+    const totalAllPages = Math.max(1, Math.ceil(filteredAll.length / ITEMS_PER_PAGE));
+    const paginatedAll = filteredAll.slice((allPage - 1) * ITEMS_PER_PAGE, allPage * ITEMS_PER_PAGE);
+
+    // Reset page when filters change
+    useEffect(() => {
+        setAllPage(1);
+    }, [searchQuery, statusFilter]);
+
+    // ======= Navigation (monthly tab) =======
     const goToPrevMonth = () => {
         if (filterMonth === 0) {
             setFilterMonth(11);
@@ -145,6 +196,7 @@ export default function OwnerPaymentsPage() {
         setFilterMonth(now.getMonth());
     };
 
+    // ======= Payment actions =======
     const openPayModal = (payment: Payment) => {
         const remaining = payment.charged_amount - payment.paid_amount;
         setSelectedPayment(payment);
@@ -246,11 +298,94 @@ export default function OwnerPaymentsPage() {
         }
     };
 
-    // Stats based on filtered payments
-    const paid = filteredPayments.filter(p => p.status === 'paid');
-    const pending = filteredPayments.filter(p => p.status === 'pending');
-    const partial = filteredPayments.filter(p => p.status === 'partial');
-    const overdue = filteredPayments.filter(p => p.status === 'overdue');
+    // ======= Stats =======
+    const currentPayments = activeTab === 'monthly' ? filteredByMonth : filteredAll;
+    const paid = currentPayments.filter(p => p.status === 'paid');
+    const pending = currentPayments.filter(p => p.status === 'pending');
+    const partial = currentPayments.filter(p => p.status === 'partial');
+    const overdue = currentPayments.filter(p => p.status === 'overdue');
+
+    // ======= Render payment row =======
+    const renderPaymentRow = (payment: Payment) => {
+        const remaining = payment.charged_amount - payment.paid_amount;
+        const canPay = ['pending', 'partial', 'overdue'].includes(payment.status);
+        const spaceCode = payment.space?.code || payment.contract?.space?.code || '—';
+
+        return (
+            <div
+                key={payment.id}
+                className="grid grid-cols-8 gap-4 px-4 py-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+            >
+                <div className="font-medium">
+                    {payment.tenant?.full_name || '—'}
+                </div>
+                <div className="text-muted-foreground">
+                    {spaceCode}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                    {payment.due_date
+                        ? new Date(payment.due_date).toLocaleDateString('ru-RU')
+                        : '—'}
+                </div>
+                <div className="font-medium">
+                    {payment.charged_amount.toLocaleString('ru-RU')} сом
+                </div>
+                <div className={`font-medium ${payment.paid_amount >= payment.charged_amount ? 'text-green-600' : payment.paid_amount > 0 ? 'text-blue-600' : 'text-muted-foreground'}`}>
+                    {payment.paid_amount.toLocaleString('ru-RU')} сом
+                    {remaining > 0 && (
+                        <span className="block text-xs text-red-500">
+                            Остаток: {remaining.toLocaleString('ru-RU')}
+                        </span>
+                    )}
+                </div>
+                <div className="relative">
+                    <Badge
+                        className={`${STATUS_COLORS[payment.status] || 'bg-gray-100 text-gray-800'} cursor-pointer`}
+                        onClick={() => setStatusMenuPaymentId(
+                            statusMenuPaymentId === payment.id ? null : payment.id
+                        )}
+                    >
+                        {STATUS_LABELS[payment.status] || payment.status}
+                    </Badge>
+                    {statusMenuPaymentId === payment.id && (
+                        <div className="absolute z-50 mt-1 bg-white dark:bg-slate-900 border rounded-lg shadow-lg py-1 min-w-[140px] left-0">
+                            {Object.entries(STATUS_LABELS).map(([key, label]) => (
+                                <button
+                                    key={key}
+                                    className={`w-full text-left px-3 py-1.5 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 ${payment.status === key ? 'font-bold' : ''}`}
+                                    onClick={() => handleChangeStatus(payment.id, key)}
+                                >
+                                    <Badge className={`${STATUS_COLORS[key]} mr-2`} >
+                                        {label}
+                                    </Badge>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <div className="col-span-2 flex gap-2">
+                    {canPay && (
+                        <Button
+                            size="sm"
+                            variant={payment.status === 'overdue' ? 'destructive' : 'default'}
+                            onClick={() => openPayModal(payment)}
+                        >
+                            <Banknote className="h-3 w-3 mr-1" />
+                            {payment.paid_amount > 0 ? 'Доплатить' : 'Оплатить'}
+                        </Button>
+                    )}
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => setDeletePaymentId(payment.id)}
+                    >
+                        <Trash2 className="h-3 w-3" />
+                    </Button>
+                </div>
+            </div>
+        );
+    };
 
     if (isLoading) {
         return (
@@ -275,21 +410,83 @@ export default function OwnerPaymentsPage() {
                 </Link>
             </div>
 
-            {/* Month Filter */}
-            <div className="flex items-center gap-3">
-                <Button variant="outline" size="icon" onClick={goToPrevMonth}>
-                    <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <div className="text-lg font-semibold min-w-[180px] text-center">
-                    {MONTH_NAMES[filterMonth]} {filterYear}
-                </div>
-                <Button variant="outline" size="icon" onClick={goToNextMonth}>
-                    <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={goToCurrentMonth}>
-                    Текущий месяц
-                </Button>
+            {/* Tabs */}
+            <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg w-fit">
+                <button
+                    onClick={() => setActiveTab('monthly')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'monthly'
+                            ? 'bg-white dark:bg-slate-900 shadow-sm text-foreground'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                >
+                    <CalendarDays className="h-4 w-4" />
+                    По месяцам
+                </button>
+                <button
+                    onClick={() => setActiveTab('all')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'all'
+                            ? 'bg-white dark:bg-slate-900 shadow-sm text-foreground'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                >
+                    <List className="h-4 w-4" />
+                    Все платежи
+                    <Badge variant="secondary" className="ml-1 text-xs">{payments.length}</Badge>
+                </button>
             </div>
+
+            {/* Monthly tab: Month Filter */}
+            {activeTab === 'monthly' && (
+                <div className="flex items-center gap-3">
+                    <Button variant="outline" size="icon" onClick={goToPrevMonth}>
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <div className="text-lg font-semibold min-w-[180px] text-center">
+                        {MONTH_NAMES[filterMonth]} {filterYear}
+                    </div>
+                    <Button variant="outline" size="icon" onClick={goToNextMonth}>
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={goToCurrentMonth}>
+                        Текущий месяц
+                    </Button>
+                </div>
+            )}
+
+            {/* All tab: Search + Status filter */}
+            {activeTab === 'all' && (
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1 max-w-md">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Поиск по имени, месту или телефону..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10"
+                        />
+                    </div>
+                    <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                        {[
+                            { key: 'all', label: 'Все' },
+                            { key: 'paid', label: 'Оплачен' },
+                            { key: 'pending', label: 'Ожидает' },
+                            { key: 'overdue', label: 'Просрочен' },
+                            { key: 'partial', label: 'Частично' },
+                        ].map(({ key, label }) => (
+                            <button
+                                key={key}
+                                onClick={() => setStatusFilter(key)}
+                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${statusFilter === key
+                                        ? 'bg-white dark:bg-slate-900 shadow-sm text-foreground'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Stats */}
             <div className="grid gap-4 md:grid-cols-4">
@@ -300,6 +497,9 @@ export default function OwnerPaymentsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-green-600">{paid.length}</div>
+                        <p className="text-xs text-muted-foreground">
+                            {paid.reduce((s, p) => s + p.paid_amount, 0).toLocaleString('ru-RU')} сом
+                        </p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -309,6 +509,9 @@ export default function OwnerPaymentsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-yellow-600">{pending.length}</div>
+                        <p className="text-xs text-muted-foreground">
+                            {pending.reduce((s, p) => s + p.charged_amount, 0).toLocaleString('ru-RU')} сом
+                        </p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -318,6 +521,9 @@ export default function OwnerPaymentsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-blue-600">{partial.length}</div>
+                        <p className="text-xs text-muted-foreground">
+                            {partial.reduce((s, p) => s + (p.charged_amount - p.paid_amount), 0).toLocaleString('ru-RU')} сом остаток
+                        </p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -327,6 +533,9 @@ export default function OwnerPaymentsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-red-600">{overdue.length}</div>
+                        <p className="text-xs text-muted-foreground">
+                            {overdue.reduce((s, p) => s + p.charged_amount, 0).toLocaleString('ru-RU')} сом
+                        </p>
                     </CardContent>
                 </Card>
             </div>
@@ -336,15 +545,27 @@ export default function OwnerPaymentsPage() {
                 <CardHeader>
                     <CardTitle>Список платежей</CardTitle>
                     <CardDescription>
-                        {MONTH_NAMES[filterMonth]} {filterYear} — всего {filteredPayments.length} записей
+                        {activeTab === 'monthly'
+                            ? `${MONTH_NAMES[filterMonth]} ${filterYear} — всего ${filteredByMonth.length} записей`
+                            : `Всего ${filteredAll.length} записей${searchQuery ? ` по запросу "${searchQuery}"` : ''}${statusFilter !== 'all' ? ` • ${STATUS_LABELS[statusFilter]}` : ''}`
+                        }
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {filteredPayments.length === 0 ? (
+                    {(activeTab === 'monthly' ? filteredByMonth : paginatedAll).length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">
                             <CreditCard className="h-16 w-16 mx-auto mb-4 opacity-20" />
-                            <p className="text-lg">Платежей за этот месяц нет</p>
-                            <p className="text-sm mb-4">Создайте платёж или выберите другой месяц</p>
+                            {activeTab === 'monthly' ? (
+                                <>
+                                    <p className="text-lg">Платежей за этот месяц нет</p>
+                                    <p className="text-sm mb-4">Создайте платёж или выберите другой месяц</p>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-lg">Платежей не найдено</p>
+                                    <p className="text-sm mb-4">Попробуйте изменить фильтры или поисковый запрос</p>
+                                </>
+                            )}
                         </div>
                     ) : (
                         <div className="space-y-2">
@@ -359,87 +580,62 @@ export default function OwnerPaymentsPage() {
                                 <div className="col-span-2">Действия</div>
                             </div>
                             {/* Table Body */}
-                            {filteredPayments.map((payment) => {
-                                const remaining = payment.charged_amount - payment.paid_amount;
-                                const canPay = ['pending', 'partial', 'overdue'].includes(payment.status);
-                                const spaceCode = payment.space?.code || payment.contract?.space?.code || '—';
+                            {(activeTab === 'monthly' ? filteredByMonth : paginatedAll).map(renderPaymentRow)}
+                        </div>
+                    )}
 
-                                return (
-                                    <div
-                                        key={payment.id}
-                                        className="grid grid-cols-8 gap-4 px-4 py-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                                    >
-                                        <div className="font-medium">
-                                            {payment.tenant?.full_name || '—'}
-                                        </div>
-                                        <div className="text-muted-foreground">
-                                            {spaceCode}
-                                        </div>
-                                        <div className="text-sm text-muted-foreground">
-                                            {payment.due_date
-                                                ? new Date(payment.due_date).toLocaleDateString('ru-RU')
-                                                : '—'}
-                                        </div>
-                                        <div className="font-medium">
-                                            {payment.charged_amount.toLocaleString('ru-RU')} сом
-                                        </div>
-                                        <div className={`font-medium ${payment.paid_amount >= payment.charged_amount ? 'text-green-600' : payment.paid_amount > 0 ? 'text-blue-600' : 'text-muted-foreground'}`}>
-                                            {payment.paid_amount.toLocaleString('ru-RU')} сом
-                                            {remaining > 0 && (
-                                                <span className="block text-xs text-red-500">
-                                                    Остаток: {remaining.toLocaleString('ru-RU')}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="relative">
-                                            <Badge
-                                                className={`${STATUS_COLORS[payment.status] || 'bg-gray-100 text-gray-800'} cursor-pointer`}
-                                                onClick={() => setStatusMenuPaymentId(
-                                                    statusMenuPaymentId === payment.id ? null : payment.id
-                                                )}
+                    {/* Pagination for "all" tab */}
+                    {activeTab === 'all' && totalAllPages > 1 && (
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                            <p className="text-sm text-muted-foreground">
+                                Показано {(allPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(allPage * ITEMS_PER_PAGE, filteredAll.length)} из {filteredAll.length}
+                            </p>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={allPage <= 1}
+                                    onClick={() => setAllPage(allPage - 1)}
+                                >
+                                    <ChevronLeft className="h-4 w-4" />
+                                    Назад
+                                </Button>
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: Math.min(totalAllPages, 5) }, (_, i) => {
+                                        let page: number;
+                                        if (totalAllPages <= 5) {
+                                            page = i + 1;
+                                        } else if (allPage <= 3) {
+                                            page = i + 1;
+                                        } else if (allPage >= totalAllPages - 2) {
+                                            page = totalAllPages - 4 + i;
+                                        } else {
+                                            page = allPage - 2 + i;
+                                        }
+                                        return (
+                                            <button
+                                                key={page}
+                                                onClick={() => setAllPage(page)}
+                                                className={`w-8 h-8 rounded-md text-sm font-medium transition-colors ${allPage === page
+                                                        ? 'bg-primary text-primary-foreground'
+                                                        : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                                                    }`}
                                             >
-                                                {STATUS_LABELS[payment.status] || payment.status}
-                                            </Badge>
-                                            {/* Status dropdown */}
-                                            {statusMenuPaymentId === payment.id && (
-                                                <div className="absolute z-50 mt-1 bg-white dark:bg-slate-900 border rounded-lg shadow-lg py-1 min-w-[140px] left-0">
-                                                    {Object.entries(STATUS_LABELS).map(([key, label]) => (
-                                                        <button
-                                                            key={key}
-                                                            className={`w-full text-left px-3 py-1.5 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 ${payment.status === key ? 'font-bold' : ''}`}
-                                                            onClick={() => handleChangeStatus(payment.id, key)}
-                                                        >
-                                                            <Badge className={`${STATUS_COLORS[key]} mr-2`} >
-                                                                {label}
-                                                            </Badge>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="col-span-2 flex gap-2">
-                                            {canPay && (
-                                                <Button
-                                                    size="sm"
-                                                    variant={payment.status === 'overdue' ? 'destructive' : 'default'}
-                                                    onClick={() => openPayModal(payment)}
-                                                >
-                                                    <Banknote className="h-3 w-3 mr-1" />
-                                                    {payment.paid_amount > 0 ? 'Доплатить' : 'Оплатить'}
-                                                </Button>
-                                            )}
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                onClick={() => setDeletePaymentId(payment.id)}
-                                            >
-                                                <Trash2 className="h-3 w-3" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                                {page}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={allPage >= totalAllPages}
+                                    onClick={() => setAllPage(allPage + 1)}
+                                >
+                                    Вперёд
+                                    <ChevronRight className="h-4 w-4" />
+                                </Button>
+                            </div>
                         </div>
                     )}
                 </CardContent>

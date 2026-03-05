@@ -5,19 +5,18 @@ import { requireRole } from '../middleware/auth.js';
 
 const router = Router();
 
-// POST /api/payments/generate-monthly - Auto-generate pending payments for active contracts
+// POST /api/payments/generate-monthly - Auto-generate pending payments for active contracts (backfill all months)
 router.post('/generate-monthly', async (req: AuthenticatedRequest, res: Response) => {
     try {
         const now = new Date();
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth(); // 0-indexed
-        const periodMonth = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0]; // e.g. "2026-03-01"
-        const today = now.toISOString().split('T')[0]; // e.g. "2026-03-02"
+        const today = now.toISOString().split('T')[0];
 
-        // Step 1: Get all active contracts with space_id
+        // Step 1: Get all active contracts with start_date
         const { data: contracts, error: contractsError } = await supabaseAdmin
             .from('lease_contracts')
-            .select('id, tenant_id, space_id, monthly_rent, payment_day')
+            .select('id, tenant_id, space_id, monthly_rent, payment_day, start_date')
             .eq('status', 'active');
 
         if (contractsError) throw contractsError;
@@ -27,43 +26,65 @@ router.post('/generate-monthly', async (req: AuthenticatedRequest, res: Response
 
         if (contracts && contracts.length > 0) {
             for (const contract of contracts) {
-                // Check if payment for this contract and this month already exists
-                const { data: existing } = await supabaseAdmin
-                    .from('payments')
-                    .select('id')
-                    .eq('contract_id', contract.id)
-                    .gte('period_month', periodMonth)
-                    .lt('period_month', new Date(currentYear, currentMonth + 1, 1).toISOString().split('T')[0])
-                    .limit(1);
+                // Determine start month from contract start_date
+                const startDate = new Date(contract.start_date);
+                let startYear = startDate.getFullYear();
+                let startMonth = startDate.getMonth(); // 0-indexed
 
-                if (existing && existing.length > 0) {
-                    alreadyExist++;
-                    continue;
-                }
+                // Iterate from contract start month to current month
+                let year = startYear;
+                let month = startMonth;
 
-                // Calculate due_date based on payment_day
-                const paymentDay = contract.payment_day || 1;
-                // Handle months with fewer days (e.g. Feb 30 -> Feb 28)
-                const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-                const actualDay = Math.min(paymentDay, lastDayOfMonth);
-                const dueDate = new Date(currentYear, currentMonth, actualDay).toISOString().split('T')[0];
+                while (year < currentYear || (year === currentYear && month <= currentMonth)) {
+                    const periodMonth = new Date(year, month, 1).toISOString().split('T')[0];
+                    const nextPeriod = new Date(year, month + 1, 1).toISOString().split('T')[0];
 
-                // Create pending payment
-                const { error: insertError } = await supabaseAdmin
-                    .from('payments')
-                    .insert({
-                        contract_id: contract.id,
-                        tenant_id: contract.tenant_id,
-                        space_id: contract.space_id,
-                        period_month: periodMonth,
-                        charged_amount: contract.monthly_rent,
-                        paid_amount: 0,
-                        due_date: dueDate,
-                        status: 'pending'
-                    });
+                    // Check if payment for this contract and this month already exists
+                    const { data: existing } = await supabaseAdmin
+                        .from('payments')
+                        .select('id')
+                        .eq('contract_id', contract.id)
+                        .gte('period_month', periodMonth)
+                        .lt('period_month', nextPeriod)
+                        .limit(1);
 
-                if (!insertError) {
-                    created++;
+                    if (existing && existing.length > 0) {
+                        alreadyExist++;
+                    } else {
+                        // Calculate due_date based on payment_day
+                        const paymentDay = contract.payment_day || 1;
+                        const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+                        const actualDay = Math.min(paymentDay, lastDayOfMonth);
+                        const dueDate = new Date(year, month, actualDay).toISOString().split('T')[0];
+
+                        // Determine status: overdue if due_date has passed, otherwise pending
+                        const status = dueDate < today ? 'overdue' : 'pending';
+
+                        // Create payment
+                        const { error: insertError } = await supabaseAdmin
+                            .from('payments')
+                            .insert({
+                                contract_id: contract.id,
+                                tenant_id: contract.tenant_id,
+                                space_id: contract.space_id,
+                                period_month: periodMonth,
+                                charged_amount: contract.monthly_rent,
+                                paid_amount: 0,
+                                due_date: dueDate,
+                                status
+                            });
+
+                        if (!insertError) {
+                            created++;
+                        }
+                    }
+
+                    // Move to next month
+                    month++;
+                    if (month > 11) {
+                        month = 0;
+                        year++;
+                    }
                 }
             }
         }
