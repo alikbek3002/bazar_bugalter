@@ -316,18 +316,21 @@ router.post('/', requireRole('owner', 'accountant'), async (req: AuthenticatedRe
     }
 });
 
-// PUT /api/payments/:id - Update payment (e.g., record payment)
+// PUT /api/payments/:id - Update payment (edit payment details)
 router.put('/:id', requireRole('owner', 'accountant'), async (req: AuthenticatedRequest, res: Response) => {
     try {
         const { id } = req.params;
-        const { paid_amount, status, paid_at, receipt_url } = req.body;
+        const { paid_amount, charged_amount, status, paid_at, receipt_url, notes, payment_method } = req.body;
 
         const updates: Record<string, unknown> = {};
 
-        if (paid_amount !== undefined) updates.paid_amount = paid_amount;
+        if (paid_amount !== undefined) updates.paid_amount = parseFloat(paid_amount);
+        if (charged_amount !== undefined) updates.charged_amount = parseFloat(charged_amount);
         if (status !== undefined) updates.status = status;
         if (paid_at !== undefined) updates.paid_at = paid_at;
         if (receipt_url !== undefined) updates.receipt_url = receipt_url;
+        if (notes !== undefined) updates.notes = notes || null;
+        if (payment_method !== undefined) updates.payment_method = payment_method || null;
 
         // Track who made this update
         const userId = req.user?.id;
@@ -336,16 +339,29 @@ router.put('/:id', requireRole('owner', 'accountant'), async (req: Authenticated
             updates.marked_at = new Date().toISOString();
         }
 
-        // Auto-set paid status if fully paid
+        // Auto-determine status based on amounts
         const { data: currentPayment } = await supabaseAdmin
             .from('payments')
-            .select('charged_amount')
+            .select('charged_amount, paid_amount, status')
             .eq('id', id)
             .single();
 
-        if (currentPayment && paid_amount >= currentPayment.charged_amount) {
-            updates.status = 'paid';
-            updates.paid_at = updates.paid_at || new Date().toISOString();
+        if (currentPayment) {
+            const finalChargedAmount = updates.charged_amount !== undefined
+                ? (updates.charged_amount as number)
+                : currentPayment.charged_amount;
+            const finalPaidAmount = updates.paid_amount !== undefined
+                ? (updates.paid_amount as number)
+                : currentPayment.paid_amount;
+
+            // Auto-set status based on paid vs charged amounts
+            if (finalPaidAmount >= finalChargedAmount && finalChargedAmount > 0) {
+                updates.status = 'paid';
+                updates.paid_at = updates.paid_at || new Date().toISOString();
+            } else if (finalPaidAmount > 0 && finalPaidAmount < finalChargedAmount) {
+                updates.status = 'partial';
+            }
+            // If paid_amount is 0, keep existing status (pending/overdue)
         }
 
         const { data, error } = await supabaseAdmin
@@ -365,7 +381,7 @@ router.put('/:id', requireRole('owner', 'accountant'), async (req: Authenticated
         console.error('Update payment error:', error);
         return res.status(500).json({
             success: false,
-            error: 'Failed to update payment'
+            error: 'Ошибка обновления платежа'
         });
     }
 });

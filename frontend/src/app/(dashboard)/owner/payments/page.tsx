@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
     CreditCard, Loader2, Plus, AlertTriangle, Clock, CheckCircle,
-    Banknote, Trash2, ChevronLeft, ChevronRight, Search, ListFilter, CalendarDays, List
+    Banknote, Trash2, ChevronLeft, ChevronRight, Search, ListFilter, CalendarDays, List, Pencil
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -94,6 +94,16 @@ export default function OwnerPaymentsPage() {
 
     // Delete confirmation
     const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
+
+    // Edit modal
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editPayment, setEditPayment] = useState<Payment | null>(null);
+    const [editForm, setEditForm] = useState({
+        charged_amount: '',
+        paid_amount: '',
+        payment_method: '',
+        notes: ''
+    });
 
     const fetchPayments = async () => {
         try {
@@ -298,6 +308,74 @@ export default function OwnerPaymentsPage() {
         }
     };
 
+    // ======= Edit =======
+    const openEditModal = (payment: Payment) => {
+        setEditPayment(payment);
+        setEditForm({
+            charged_amount: payment.charged_amount.toString(),
+            paid_amount: payment.paid_amount.toString(),
+            payment_method: payment.payment_method || '',
+            notes: payment.notes || ''
+        });
+        setShowEditModal(true);
+    };
+
+    const handleEdit = async () => {
+        if (!editPayment) return;
+
+        const chargedAmount = parseFloat(editForm.charged_amount);
+        const paidAmount = parseFloat(editForm.paid_amount);
+
+        if (isNaN(chargedAmount) || chargedAmount <= 0) {
+            toast.error('Введите корректную сумму начисления');
+            return;
+        }
+
+        if (isNaN(paidAmount) || paidAmount < 0) {
+            toast.error('Введите корректную сумму оплаты');
+            return;
+        }
+
+        if (paidAmount > chargedAmount) {
+            toast.error('Оплаченная сумма не может превышать начисленную');
+            return;
+        }
+
+        setIsProcessing(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/payments/${editPayment.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    charged_amount: chargedAmount,
+                    paid_amount: paidAmount,
+                    payment_method: editForm.payment_method,
+                    notes: editForm.notes
+                })
+            });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error);
+
+            const newStatus = paidAmount >= chargedAmount ? 'Оплачен' :
+                paidAmount > 0 ? 'Частично' : 'без изменений';
+
+            toast.success(`Платёж обновлён${paidAmount >= chargedAmount ? ' • Статус: Оплачен ✓' : ''}`);
+            setShowEditModal(false);
+            setEditPayment(null);
+            await fetchPayments();
+        } catch (error: any) {
+            console.error('Edit error:', error);
+            toast.error(error.message || 'Ошибка редактирования');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     // ======= Stats =======
     const currentPayments = activeTab === 'monthly' ? filteredByMonth : filteredAll;
     const paid = currentPayments.filter(p => p.status === 'paid');
@@ -377,8 +455,18 @@ export default function OwnerPaymentsPage() {
                     <Button
                         size="sm"
                         variant="ghost"
+                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={() => openEditModal(payment)}
+                        title="Редактировать"
+                    >
+                        <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="ghost"
                         className="text-red-500 hover:text-red-700 hover:bg-red-50"
                         onClick={() => setDeletePaymentId(payment.id)}
+                        title="Удалить"
                     >
                         <Trash2 className="h-3 w-3" />
                     </Button>
@@ -415,8 +503,8 @@ export default function OwnerPaymentsPage() {
                 <button
                     onClick={() => setActiveTab('monthly')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'monthly'
-                            ? 'bg-white dark:bg-slate-900 shadow-sm text-foreground'
-                            : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-white dark:bg-slate-900 shadow-sm text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
                         }`}
                 >
                     <CalendarDays className="h-4 w-4" />
@@ -425,8 +513,8 @@ export default function OwnerPaymentsPage() {
                 <button
                     onClick={() => setActiveTab('all')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'all'
-                            ? 'bg-white dark:bg-slate-900 shadow-sm text-foreground'
-                            : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-white dark:bg-slate-900 shadow-sm text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
                         }`}
                 >
                     <List className="h-4 w-4" />
@@ -477,8 +565,8 @@ export default function OwnerPaymentsPage() {
                                 key={key}
                                 onClick={() => setStatusFilter(key)}
                                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${statusFilter === key
-                                        ? 'bg-white dark:bg-slate-900 shadow-sm text-foreground'
-                                        : 'text-muted-foreground hover:text-foreground'
+                                    ? 'bg-white dark:bg-slate-900 shadow-sm text-foreground'
+                                    : 'text-muted-foreground hover:text-foreground'
                                     }`}
                             >
                                 {label}
@@ -617,8 +705,8 @@ export default function OwnerPaymentsPage() {
                                                 key={page}
                                                 onClick={() => setAllPage(page)}
                                                 className={`w-8 h-8 rounded-md text-sm font-medium transition-colors ${allPage === page
-                                                        ? 'bg-primary text-primary-foreground'
-                                                        : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                                                    ? 'bg-primary text-primary-foreground'
+                                                    : 'hover:bg-slate-100 dark:hover:bg-slate-800'
                                                     }`}
                                             >
                                                 {page}
@@ -710,6 +798,128 @@ export default function OwnerPaymentsPage() {
                                         <>
                                             <CheckCircle className="h-4 w-4 mr-1" />
                                             Подтвердить оплату
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {showEditModal && editPayment && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                    <Card className="w-full max-w-md mx-4">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Pencil className="h-5 w-5" />
+                                Редактировать платёж
+                            </CardTitle>
+                            <CardDescription>
+                                {editPayment.tenant?.full_name} — {editPayment.space?.code || editPayment.contract?.space?.code || '—'}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="editChargedAmount">Начислено (сом)</Label>
+                                    <Input
+                                        type="number"
+                                        id="editChargedAmount"
+                                        placeholder="Сумма начисления"
+                                        value={editForm.charged_amount}
+                                        onChange={(e) => setEditForm({ ...editForm, charged_amount: e.target.value })}
+                                        min={0}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="editPaidAmount">Оплачено (сом)</Label>
+                                    <Input
+                                        type="number"
+                                        id="editPaidAmount"
+                                        placeholder="Сумма оплаты"
+                                        value={editForm.paid_amount}
+                                        onChange={(e) => setEditForm({ ...editForm, paid_amount: e.target.value })}
+                                        min={0}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="editPaymentMethod">Метод оплаты</Label>
+                                <Input
+                                    id="editPaymentMethod"
+                                    placeholder="Наличные, перевод и т.д."
+                                    value={editForm.payment_method}
+                                    onChange={(e) => setEditForm({ ...editForm, payment_method: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="editNotes">Заметки</Label>
+                                <Input
+                                    id="editNotes"
+                                    placeholder="Дополнительная информация"
+                                    value={editForm.notes}
+                                    onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                                />
+                            </div>
+
+                            {/* Status preview */}
+                            {editForm.charged_amount && editForm.paid_amount && (() => {
+                                const charged = parseFloat(editForm.charged_amount);
+                                const paid = parseFloat(editForm.paid_amount);
+                                if (isNaN(charged) || isNaN(paid)) return null;
+                                const willBePaid = paid >= charged && charged > 0;
+                                const willBePartial = paid > 0 && paid < charged;
+                                return (
+                                    <div className={`p-3 rounded-lg text-sm ${willBePaid
+                                            ? 'bg-green-50 text-green-800 border border-green-200'
+                                            : willBePartial
+                                                ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                                                : 'bg-slate-50 text-slate-600 border border-slate-200'
+                                        }`}>
+                                        {willBePaid && (
+                                            <div className="flex items-center gap-2">
+                                                <CheckCircle className="h-4 w-4" />
+                                                Статус автоматически изменится на <strong>«Оплачен»</strong>
+                                            </div>
+                                        )}
+                                        {willBePartial && (
+                                            <div className="flex items-center gap-2">
+                                                <Banknote className="h-4 w-4" />
+                                                Статус автоматически изменится на <strong>«Частично»</strong>
+                                                <span className="ml-auto font-medium">
+                                                    Остаток: {(charged - paid).toLocaleString('ru-RU')} сом
+                                                </span>
+                                            </div>
+                                        )}
+                                        {!willBePaid && !willBePartial && paid === 0 && (
+                                            <div>Статус останется без изменений</div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+
+                            <div className="flex justify-end gap-3 pt-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                        setShowEditModal(false);
+                                        setEditPayment(null);
+                                    }}
+                                    disabled={isProcessing}
+                                >
+                                    Отмена
+                                </Button>
+                                <Button onClick={handleEdit} disabled={isProcessing}>
+                                    {isProcessing ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <>
+                                            <CheckCircle className="h-4 w-4 mr-1" />
+                                            Сохранить
                                         </>
                                     )}
                                 </Button>
