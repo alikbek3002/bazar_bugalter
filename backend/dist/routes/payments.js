@@ -4,18 +4,17 @@ const express_1 = require("express");
 const supabase_js_1 = require("../config/supabase.js");
 const auth_js_1 = require("../middleware/auth.js");
 const router = (0, express_1.Router)();
-// POST /api/payments/generate-monthly - Auto-generate pending payments for active contracts
+// POST /api/payments/generate-monthly - Auto-generate pending payments for active contracts (backfill all months)
 router.post('/generate-monthly', async (req, res) => {
     try {
         const now = new Date();
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth(); // 0-indexed
-        const periodMonth = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0]; // e.g. "2026-03-01"
-        const today = now.toISOString().split('T')[0]; // e.g. "2026-03-02"
-        // Step 1: Get all active contracts with space_id
+        const today = now.toISOString().split('T')[0];
+        // Step 1: Get all active contracts with start_date
         const { data: contracts, error: contractsError } = await supabase_js_1.supabaseAdmin
             .from('lease_contracts')
-            .select('id, tenant_id, space_id, monthly_rent, payment_day')
+            .select('id, tenant_id, space_id, monthly_rent, payment_day, start_date')
             .eq('status', 'active');
         if (contractsError)
             throw contractsError;
@@ -23,39 +22,58 @@ router.post('/generate-monthly', async (req, res) => {
         let alreadyExist = 0;
         if (contracts && contracts.length > 0) {
             for (const contract of contracts) {
-                // Check if payment for this contract and this month already exists
-                const { data: existing } = await supabase_js_1.supabaseAdmin
-                    .from('payments')
-                    .select('id')
-                    .eq('contract_id', contract.id)
-                    .gte('period_month', periodMonth)
-                    .lt('period_month', new Date(currentYear, currentMonth + 1, 1).toISOString().split('T')[0])
-                    .limit(1);
-                if (existing && existing.length > 0) {
-                    alreadyExist++;
-                    continue;
-                }
-                // Calculate due_date based on payment_day
-                const paymentDay = contract.payment_day || 1;
-                // Handle months with fewer days (e.g. Feb 30 -> Feb 28)
-                const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-                const actualDay = Math.min(paymentDay, lastDayOfMonth);
-                const dueDate = new Date(currentYear, currentMonth, actualDay).toISOString().split('T')[0];
-                // Create pending payment
-                const { error: insertError } = await supabase_js_1.supabaseAdmin
-                    .from('payments')
-                    .insert({
-                    contract_id: contract.id,
-                    tenant_id: contract.tenant_id,
-                    space_id: contract.space_id,
-                    period_month: periodMonth,
-                    charged_amount: contract.monthly_rent,
-                    paid_amount: 0,
-                    due_date: dueDate,
-                    status: 'pending'
-                });
-                if (!insertError) {
-                    created++;
+                // Determine start month from contract start_date
+                const startDate = new Date(contract.start_date);
+                let startYear = startDate.getFullYear();
+                let startMonth = startDate.getMonth(); // 0-indexed
+                // Iterate from contract start month to current month
+                let year = startYear;
+                let month = startMonth;
+                while (year < currentYear || (year === currentYear && month <= currentMonth)) {
+                    const periodMonth = new Date(year, month, 1).toISOString().split('T')[0];
+                    const nextPeriod = new Date(year, month + 1, 1).toISOString().split('T')[0];
+                    // Check if payment for this contract and this month already exists
+                    const { data: existing } = await supabase_js_1.supabaseAdmin
+                        .from('payments')
+                        .select('id')
+                        .eq('contract_id', contract.id)
+                        .gte('period_month', periodMonth)
+                        .lt('period_month', nextPeriod)
+                        .limit(1);
+                    if (existing && existing.length > 0) {
+                        alreadyExist++;
+                    }
+                    else {
+                        // Calculate due_date based on payment_day
+                        const paymentDay = contract.payment_day || 1;
+                        const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+                        const actualDay = Math.min(paymentDay, lastDayOfMonth);
+                        const dueDate = new Date(year, month, actualDay).toISOString().split('T')[0];
+                        // Determine status: overdue if due_date has passed, otherwise pending
+                        const status = dueDate < today ? 'overdue' : 'pending';
+                        // Create payment
+                        const { error: insertError } = await supabase_js_1.supabaseAdmin
+                            .from('payments')
+                            .insert({
+                            contract_id: contract.id,
+                            tenant_id: contract.tenant_id,
+                            space_id: contract.space_id,
+                            period_month: periodMonth,
+                            charged_amount: contract.monthly_rent,
+                            paid_amount: 0,
+                            due_date: dueDate,
+                            status
+                        });
+                        if (!insertError) {
+                            created++;
+                        }
+                    }
+                    // Move to next month
+                    month++;
+                    if (month > 11) {
+                        month = 0;
+                        year++;
+                    }
                 }
             }
         }
@@ -188,7 +206,7 @@ router.get('/by-space/:spaceId', async (req, res) => {
 // POST /api/payments - Create new payment
 router.post('/', (0, auth_js_1.requireRole)('owner', 'accountant'), async (req, res) => {
     try {
-        const { space_id, paid_amount, period_start, period_end, payment_method, notes } = req.body;
+        const { space_id, charged_amount: rawChargedAmount, paid_amount, period_start, period_end, payment_method, notes } = req.body;
         // Validate required fields
         if (!space_id || !paid_amount || !period_start || !period_end) {
             return res.status(400).json({
@@ -209,11 +227,17 @@ router.post('/', (0, auth_js_1.requireRole)('owner', 'accountant'), async (req, 
                 error: 'Нельзя добавить платёж: место свободно или нет активного договора'
             });
         }
-        // Calculate charged_amount based on period (monthly_rent * months)
-        const start = new Date(period_start);
-        const end = new Date(period_end);
-        const months = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (30 * 24 * 60 * 60 * 1000)));
-        const charged_amount = activeContract.monthly_rent * months;
+        // Use charged_amount from request if provided, otherwise auto-calculate
+        let charged_amount;
+        if (rawChargedAmount && parseFloat(rawChargedAmount) > 0) {
+            charged_amount = parseFloat(rawChargedAmount);
+        }
+        else {
+            const start = new Date(period_start);
+            const end = new Date(period_end);
+            const months = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (30 * 24 * 60 * 60 * 1000)));
+            charged_amount = activeContract.monthly_rent * months;
+        }
         // Get user ID who is creating the payment
         const userId = req.user?.id;
         const { data, error } = await supabase_js_1.supabaseAdmin

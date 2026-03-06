@@ -41,6 +41,7 @@ export default function NewPaymentPage() {
 
     const [formData, setFormData] = useState({
         space_id: '',
+        charged_amount: '',
         paid_amount: '',
         period_start: '',
         period_end: '',
@@ -107,7 +108,7 @@ export default function NewPaymentPage() {
         setSpaceOpen(false);
     };
 
-    const calculateChargedAmount = () => {
+    const calculateSuggestedAmount = () => {
         if (!selectedSpace || !formData.period_start || !formData.period_end) return 0;
         const start = new Date(formData.period_start);
         const end = new Date(formData.period_end);
@@ -116,7 +117,7 @@ export default function NewPaymentPage() {
     };
 
     const handleSubmit = async () => {
-        if (!formData.space_id || !formData.paid_amount || !formData.period_start || !formData.period_end) {
+        if (!formData.space_id || !formData.charged_amount || !formData.paid_amount || !formData.period_start || !formData.period_end) {
             toast.error('Заполните все обязательные поля');
             return;
         }
@@ -154,7 +155,8 @@ export default function NewPaymentPage() {
         );
     }
 
-    const chargedAmount = calculateChargedAmount();
+    const suggestedAmount = calculateSuggestedAmount();
+    const chargedAmount = formData.charged_amount ? parseFloat(formData.charged_amount) : 0;
 
     return (
         <div className="space-y-6 max-w-2xl mx-auto">
@@ -264,13 +266,35 @@ export default function NewPaymentPage() {
                         </div>
                     </div>
 
-                    {/* Calculated amount */}
-                    {chargedAmount > 0 && (
-                        <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                            <div className="text-sm text-muted-foreground">К оплате за период</div>
-                            <div className="text-2xl font-bold">{chargedAmount.toLocaleString()} сом</div>
+                    {/* Suggested amount hint */}
+                    {suggestedAmount > 0 && (
+                        <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-between">
+                            <div>
+                                <div className="text-sm text-muted-foreground">Расчётная сумма за период</div>
+                                <div className="text-lg font-semibold">{suggestedAmount.toLocaleString()} сом</div>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setFormData(prev => ({ ...prev, charged_amount: String(suggestedAmount) }))}
+                            >
+                                Применить
+                            </Button>
                         </div>
                     )}
+
+                    {/* Charged Amount (manual input) */}
+                    <div className="space-y-2">
+                        <Label htmlFor="charged_amount">Сумма начисления (к оплате) *</Label>
+                        <Input
+                            type="number"
+                            id="charged_amount"
+                            placeholder="Введите сумму начисления"
+                            value={formData.charged_amount}
+                            onChange={(e) => setFormData(prev => ({ ...prev, charged_amount: e.target.value }))}
+                        />
+                    </div>
 
                     {/* Paid Amount */}
                     <div className="space-y-2">

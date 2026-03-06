@@ -231,6 +231,7 @@ router.post('/', requireRole('owner', 'accountant'), async (req: AuthenticatedRe
     try {
         const {
             space_id,
+            charged_amount: rawChargedAmount,
             paid_amount,
             period_start,
             period_end,
@@ -261,11 +262,16 @@ router.post('/', requireRole('owner', 'accountant'), async (req: AuthenticatedRe
             });
         }
 
-        // Calculate charged_amount based on period (monthly_rent * months)
-        const start = new Date(period_start);
-        const end = new Date(period_end);
-        const months = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (30 * 24 * 60 * 60 * 1000)));
-        const charged_amount = activeContract.monthly_rent * months;
+        // Use charged_amount from request if provided, otherwise auto-calculate
+        let charged_amount: number;
+        if (rawChargedAmount && parseFloat(rawChargedAmount) > 0) {
+            charged_amount = parseFloat(rawChargedAmount);
+        } else {
+            const start = new Date(period_start);
+            const end = new Date(period_end);
+            const months = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (30 * 24 * 60 * 60 * 1000)));
+            charged_amount = activeContract.monthly_rent * months;
+        }
 
         // Get user ID who is creating the payment
         const userId = req.user?.id;
